@@ -47,10 +47,13 @@ public:
     Q_INVOKABLE void disconnect         ();
 
     // Spotify API calls
-    void             getRefreshToken    ();
+    void             refreshAccessToken ();
     Q_INVOKABLE void search             (QString query);
     Q_INVOKABLE void search             (QString query, QString type);
     Q_INVOKABLE void search             (QString query, QString type, QString limit, QString offset);
+
+    // Spotify Connect
+    Q_INVOKABLE void getCurrentPlayer   ();
 
 public slots:
     void sendCommand                    (const QString& type, const QString& entity_id, const QString& command, const QVariant& param);
@@ -62,6 +65,8 @@ private:
     NotificationsInterface*             m_notifications;
     YioAPIInterface*                    m_api;
     ConfigInterface*                    m_config;
+
+    QString                             m_entity_id;
 
     // Spotify auth stuff
     QString                             m_client_id;

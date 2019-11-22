@@ -3,6 +3,7 @@
 #include <QJsonArray>
 
 #include "spotify.h"
+#include "../remote-software/sources/entities/mediaplayerinterface.h"
 
 void Spotify::create(const QVariantMap &config, QObject *entities, QObject *notifications, QObject *api, QObject *configObj)
 {
@@ -51,6 +52,7 @@ void SpotifyBase::setup(const QVariantMap& config, QObject* entities, QObject* n
             m_client_secret = map.value("client_secret").toString();
             m_access_token = map.value("access_token").toString();
             m_refresh_token = map.value("refresh_token").toString();
+            m_entity_id = map.value("entity_id").toString();
         }
     }
 
@@ -63,6 +65,8 @@ void SpotifyBase::setup(const QVariantMap& config, QObject* entities, QObject* n
 void SpotifyBase::connect()
 {
     setState(CONNECTED);
+
+    getCurrentPlayer();
 }
 
 void SpotifyBase::disconnect()
@@ -70,7 +74,7 @@ void SpotifyBase::disconnect()
     setState(DISCONNECTED);
 }
 
-void SpotifyBase::getRefreshToken()
+void SpotifyBase::refreshAccessToken()
 {
     QNetworkAccessManager* manager = new QNetworkAccessManager(this);
     QNetworkRequest request;
@@ -245,6 +249,73 @@ void SpotifyBase::search(QString query, QString type, QString limit, QString off
     manager->get(request);
 }
 
+void SpotifyBase::getCurrentPlayer()
+{
+    QNetworkAccessManager* manager = new QNetworkAccessManager(this);
+    QNetworkRequest request;
+
+    QObject::connect(manager, &QNetworkAccessManager::finished, this, [=] (QNetworkReply* reply) {
+        if (reply->error()) {
+            qDebug() << reply->errorString();
+        }
+
+        QString answer = reply->readAll();
+
+        if (answer != "") {
+
+            // convert to json
+            QJsonParseError parseerror;
+            QJsonDocument doc = QJsonDocument::fromJson(answer.toUtf8(), &parseerror);
+            if (parseerror.error != QJsonParseError::NoError) {
+                qDebug() << "JSON error : " << parseerror.errorString();
+                return;
+            }
+            QVariantMap map = doc.toVariant().toMap();
+
+            // get the image
+            QVariantList images = map.value("item").toMap().value("album").toMap().value("images").toList();
+            QString url = images[0].toMap().value("url").toString();
+
+            // get the device
+            QString device = map.value("device").toMap().value("name").toString();
+
+            // get track title
+            QString title =  map.value("item").toMap().value("name").toString();
+
+            // get artist
+            QString artist = map.value("item").toMap().value("artists").toList()[0].toMap().value("name").toString();
+
+            // update the entity
+            EntityInterface* entity = static_cast<EntityInterface*>(m_entities->getEntityInterface(m_entity_id));
+            entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::STATE), 3); // off
+            entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::SOURCE), device);
+            entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIATITLE), title);
+            entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIAARTIST), artist);
+            entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIAIMAGE), url);
+
+        } else {
+            EntityInterface* entity = static_cast<EntityInterface*>(m_entities->getEntityInterface(m_entity_id));
+            entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::STATE), 0); // off
+            entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::SOURCE), "");
+            entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIATITLE), "");
+            entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIAARTIST), "");
+            entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIAIMAGE), "");
+        }
+
+        reply->deleteLater();
+    });
+
+    QObject::connect(manager, &QNetworkAccessManager::networkAccessibleChanged, this, [=](QNetworkAccessManager::NetworkAccessibility accessibility) {
+        qDebug() << accessibility;
+    });
+
+    request.setRawHeader("Content-Type", "application/json");
+    request.setRawHeader("Authorization", "Bearer " + m_access_token.toLocal8Bit());
+    request.setUrl(m_apiURL + "/v1/me/player");
+
+    manager->get(request);
+}
+
 void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, const QString& command, const QVariant& param)
 {
     Q_UNUSED(type)
@@ -263,6 +334,6 @@ void SpotifyBase::updateEntity(const QString &entity_id, const QVariantMap &attr
 
 void SpotifyBase::onTokenTimeOut()
 {
-    // get a new refresh token
-    getRefreshToken();
+    // get a new access token
+    refreshAccessToken();
 }
