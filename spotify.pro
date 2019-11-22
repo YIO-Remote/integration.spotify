@@ -1,6 +1,6 @@
 TEMPLATE        = lib
 CONFIG         += plugin
-QT             += websockets core quick
+QT             += core quick network
 
 REMOTE_SRC = $$(YIO_SRC)
 isEmpty(REMOTE_SRC) {
