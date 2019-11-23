@@ -179,6 +179,10 @@ void SpotifyBase::getCurrentPlayer()
             // get the device
             attr.insert("device", map.value("device").toMap().value("name").toString());
 
+            // get the volume
+            attr.insert("volume", map.value("device").toMap().value("volume_percent").toInt());
+            qDebug() << map.value("device").toMap().value("volume_percent").toInt();
+
             // get track title
             attr.insert("title", map.value("item").toMap().value("name").toString());
 
@@ -209,10 +213,19 @@ void SpotifyBase::getCurrentPlayer()
 
 void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, const QString& command, const QVariant& param)
 {
-    Q_UNUSED(type)
-    Q_UNUSED(entity_id)
-    Q_UNUSED(command)
-    Q_UNUSED(param)
+    if (type == "media_player" && entity_id == m_entity_id) {
+        if (command == "PLAY")
+            putRequest("/v1/me/player/play", "");
+        else if (command == "PAUSE")
+            putRequest("/v1/me/player/pause", "");
+        else if (command == "NEXT")
+            postRequest("/v1/me/player/next", "");
+        else if (command == "PREVIOUS")
+            postRequest("/v1/me/player/previous", "");
+        else if (command == "VOLUME") {
+            putRequest("/v1/me/player/volume", "?=volume_percent=" + param.toString());
+        }
+    }
 }
 
 void SpotifyBase::updateEntity(const QString &entity_id, const QVariantMap &attr)
@@ -222,6 +235,7 @@ void SpotifyBase::updateEntity(const QString &entity_id, const QVariantMap &attr
         // update the media player
         entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::STATE), attr.value("state").toInt());
         entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::SOURCE), attr.value("device").toString());
+        entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::VOLUME), attr.value("volume").toInt());
         entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIATITLE), attr.value("title").toString());
         entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIAARTIST), attr.value("artist").toString());
         entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIAIMAGE), attr.value("image").toString());
