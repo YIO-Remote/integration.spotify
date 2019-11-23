@@ -1,9 +1,13 @@
 #include <QtDebug>
 #include <QJsonDocument>
 #include <QJsonArray>
+#include <QJsonObject>
+#include <QLoggingCategory>
 
 #include "spotify.h"
 #include "../remote-software/sources/entities/mediaplayerinterface.h"
+
+Q_LOGGING_CATEGORY(LC, "SPOTIFY INTEGRATION");
 
 void Spotify::create(const QVariantMap &config, QObject *entities, QObject *notifications, QObject *api, QObject *configObj)
 {
@@ -37,6 +41,10 @@ void Spotify::create(const QVariantMap &config, QObject *entities, QObject *noti
 SpotifyBase::SpotifyBase(QObject* parent)
 {
     this->setParent(parent);
+
+    m_polling_timer = new QTimer(this);
+    m_polling_timer->setInterval(2000);
+    QObject::connect(m_polling_timer, &QTimer::timeout, this, &SpotifyBase::onPollingTimerTimeout);
 }
 
 void SpotifyBase::setup(const QVariantMap& config, QObject* entities, QObject* notifications, QObject* api, QObject* configObj)
@@ -65,13 +73,13 @@ void SpotifyBase::setup(const QVariantMap& config, QObject* entities, QObject* n
 void SpotifyBase::connect()
 {
     setState(CONNECTED);
-
-    getCurrentPlayer();
+    m_polling_timer->start();
 }
 
 void SpotifyBase::disconnect()
 {
     setState(DISCONNECTED);
+    m_polling_timer->stop();
 }
 
 void SpotifyBase::refreshAccessToken()
@@ -81,7 +89,7 @@ void SpotifyBase::refreshAccessToken()
 
     QObject::connect(manager, &QNetworkAccessManager::finished, this, [=] (QNetworkReply* reply) {
         if (reply->error()) {
-            qDebug() << reply->errorString();
+            qDebug(LC) << reply->errorString();
         }
 
         QString answer = reply->readAll();
@@ -90,7 +98,7 @@ void SpotifyBase::refreshAccessToken()
         QJsonParseError parseerror;
         QJsonDocument doc = QJsonDocument::fromJson(answer.toUtf8(), &parseerror);
         if (parseerror.error != QJsonParseError::NoError) {
-            qDebug() << "JSON error : " << parseerror.errorString();
+            qDebug(LC) << "JSON error : " << parseerror.errorString();
             return;
         }
         QVariantMap map = doc.toVariant().toMap();
@@ -119,7 +127,7 @@ void SpotifyBase::refreshAccessToken()
     });
 
     QObject::connect(manager, &QNetworkAccessManager::networkAccessibleChanged, this, [=](QNetworkAccessManager::NetworkAccessibility accessibility) {
-        qDebug() << accessibility;
+        qDebug(LC) << accessibility;
     });
 
     QByteArray postData;
@@ -140,180 +148,63 @@ void SpotifyBase::refreshAccessToken()
 
 void SpotifyBase::search(QString query)
 {
-    query.replace(" ", "%20");
-
-    QNetworkAccessManager* manager = new QNetworkAccessManager(this);
-    QNetworkRequest request;
-
-    QObject::connect(manager, &QNetworkAccessManager::finished, this, [=] (QNetworkReply* reply) {
-        if (reply->error()) {
-            qDebug() << reply->errorString();
-        }
-
-        QString answer = reply->readAll();
-
-        // convert to json
-        QJsonParseError parseerror;
-        QJsonDocument doc = QJsonDocument::fromJson(answer.toUtf8(), &parseerror);
-        if (parseerror.error != QJsonParseError::NoError) {
-            qDebug() << "JSON error : " << parseerror.errorString();
-            return;
-        }
-        QVariantMap map = doc.toVariant().toMap();
-
-        reply->deleteLater();
-    });
-
-    QObject::connect(manager, &QNetworkAccessManager::networkAccessibleChanged, this, [=](QNetworkAccessManager::NetworkAccessibility accessibility) {
-        qDebug() << accessibility;
-    });
-
-    request.setRawHeader("Content-Type", "application/json");
-    request.setRawHeader("Authorization", "Bearer " + m_access_token.toLocal8Bit());
-    request.setUrl(m_apiURL + "/v1/search" + "?q=" + query + "&type=album,artist,playlist,track");
-
-    manager->get(request);
+    search(query, "album,artist,playlist,track", "20", "0");
 }
 
 void SpotifyBase::search(QString query, QString type)
 {
-    query.replace(" ", "%20");
-
-    QNetworkAccessManager* manager = new QNetworkAccessManager(this);
-    QNetworkRequest request;
-
-    QObject::connect(manager, &QNetworkAccessManager::finished, this, [=] (QNetworkReply* reply) {
-        if (reply->error()) {
-            qDebug() << reply->errorString();
-        }
-
-        QString answer = reply->readAll();
-
-        // convert to json
-        QJsonParseError parseerror;
-        QJsonDocument doc = QJsonDocument::fromJson(answer.toUtf8(), &parseerror);
-        if (parseerror.error != QJsonParseError::NoError) {
-            qDebug() << "JSON error : " << parseerror.errorString();
-            return;
-        }
-        QVariantMap map = doc.toVariant().toMap();
-
-        reply->deleteLater();
-    });
-
-    QObject::connect(manager, &QNetworkAccessManager::networkAccessibleChanged, this, [=](QNetworkAccessManager::NetworkAccessibility accessibility) {
-        qDebug() << accessibility;
-    });
-
-    request.setRawHeader("Content-Type", "application/json");
-    request.setRawHeader("Authorization", "Bearer " + m_access_token.toLocal8Bit());
-    request.setUrl(m_apiURL + "/v1/search" + "?q=" + query + "&type=" + type);
-
-    manager->get(request);
+    search(query, type, "20", "0");
 }
 
 void SpotifyBase::search(QString query, QString type, QString limit, QString offset)
 {
     query.replace(" ", "%20");
 
-    QNetworkAccessManager* manager = new QNetworkAccessManager(this);
-    QNetworkRequest request;
-
-    QObject::connect(manager, &QNetworkAccessManager::finished, this, [=] (QNetworkReply* reply) {
-        if (reply->error()) {
-            qDebug() << reply->errorString();
-        }
-
-        QString answer = reply->readAll();
-
-        // convert to json
-        QJsonParseError parseerror;
-        QJsonDocument doc = QJsonDocument::fromJson(answer.toUtf8(), &parseerror);
-        if (parseerror.error != QJsonParseError::NoError) {
-            qDebug() << "JSON error : " << parseerror.errorString();
-            return;
-        }
-        QVariantMap map = doc.toVariant().toMap();
-
-        reply->deleteLater();
+    QObject::connect(this, &SpotifyBase::requestReady, this, [=] (const QVariantMap& map) {
+        qDebug(LC) << map;
     });
 
-    QObject::connect(manager, &QNetworkAccessManager::networkAccessibleChanged, this, [=](QNetworkAccessManager::NetworkAccessibility accessibility) {
-        qDebug() << accessibility;
-    });
-
-    request.setRawHeader("Content-Type", "application/json");
-    request.setRawHeader("Authorization", "Bearer " + m_access_token.toLocal8Bit());
-    request.setUrl(m_apiURL + "/v1/search" + "?q=" + query + "&type=" + type + "&limit=" + limit + "&offset=" + offset);
-
-    manager->get(request);
+    getRequest("/v1/search", "?q=" + query + "&type=" + type + "&limit=" + limit + "&offset=" + offset);
 }
 
 void SpotifyBase::getCurrentPlayer()
 {
-    QNetworkAccessManager* manager = new QNetworkAccessManager(this);
-    QNetworkRequest request;
+    QObject::connect(this, &SpotifyBase::requestReady, this, [=] (const QVariantMap& map) {
+        QVariantMap attr;
 
-    QObject::connect(manager, &QNetworkAccessManager::finished, this, [=] (QNetworkReply* reply) {
-        if (reply->error()) {
-            qDebug() << reply->errorString();
-        }
-
-        QString answer = reply->readAll();
-
-        if (answer != "") {
-
-            // convert to json
-            QJsonParseError parseerror;
-            QJsonDocument doc = QJsonDocument::fromJson(answer.toUtf8(), &parseerror);
-            if (parseerror.error != QJsonParseError::NoError) {
-                qDebug() << "JSON error : " << parseerror.errorString();
-                return;
-            }
-            QVariantMap map = doc.toVariant().toMap();
-
+        if (map.contains("item")) {
             // get the image
-            QVariantList images = map.value("item").toMap().value("album").toMap().value("images").toList();
-            QString url = images[0].toMap().value("url").toString();
+            attr.insert("image", map.value("item").toMap().value("album").toMap().value("images").toList()[0].toMap().value("url").toString());
 
             // get the device
-            QString device = map.value("device").toMap().value("name").toString();
+            attr.insert("device", map.value("device").toMap().value("name").toString());
 
             // get track title
-            QString title =  map.value("item").toMap().value("name").toString();
+            attr.insert("title", map.value("item").toMap().value("name").toString());
 
             // get artist
-            QString artist = map.value("item").toMap().value("artists").toList()[0].toMap().value("name").toString();
+            attr.insert("artist", map.value("item").toMap().value("artists").toList()[0].toMap().value("name").toString());
 
-            // update the entity
-            EntityInterface* entity = static_cast<EntityInterface*>(m_entities->getEntityInterface(m_entity_id));
-            entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::STATE), 3); // off
-            entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::SOURCE), device);
-            entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIATITLE), title);
-            entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIAARTIST), artist);
-            entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIAIMAGE), url);
+            // state
+            if (map.value("is_playing").toBool()) {
+                attr.insert("state", 3); // playing
+            } else {
+                attr.insert("state", 2); // idle
+            }
 
         } else {
-            EntityInterface* entity = static_cast<EntityInterface*>(m_entities->getEntityInterface(m_entity_id));
-            entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::STATE), 0); // off
-            entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::SOURCE), "");
-            entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIATITLE), "");
-            entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIAARTIST), "");
-            entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIAIMAGE), "");
+            attr.insert("image", "");
+            attr.insert("device", "");
+            attr.insert("title", "");
+            attr.insert("artist", "");
+            attr.insert("state", 0); // off
         }
 
-        reply->deleteLater();
+        // update the entity
+        updateEntity(m_entity_id, attr);
     });
 
-    QObject::connect(manager, &QNetworkAccessManager::networkAccessibleChanged, this, [=](QNetworkAccessManager::NetworkAccessibility accessibility) {
-        qDebug() << accessibility;
-    });
-
-    request.setRawHeader("Content-Type", "application/json");
-    request.setRawHeader("Authorization", "Bearer " + m_access_token.toLocal8Bit());
-    request.setUrl(m_apiURL + "/v1/me/player");
-
-    manager->get(request);
+    getRequest("/v1/me/player", "");
 }
 
 void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, const QString& command, const QVariant& param)
@@ -326,14 +217,138 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, con
 
 void SpotifyBase::updateEntity(const QString &entity_id, const QVariantMap &attr)
 {
-    EntityInterface* entity = m_entities->getEntityInterface(entity_id);
+    EntityInterface* entity = static_cast<EntityInterface*>(m_entities->getEntityInterface(entity_id));
     if (entity) {
         // update the media player
+        entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::STATE), attr.value("state").toInt());
+        entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::SOURCE), attr.value("device").toString());
+        entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIATITLE), attr.value("title").toString());
+        entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIAARTIST), attr.value("artist").toString());
+        entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIAIMAGE), attr.value("image").toString());
     }
+}
+
+void SpotifyBase::getRequest(const QString &url, const QString &params)
+{
+    // create new networkacces manager and request
+    m_manager = new QNetworkAccessManager(this);
+    QNetworkRequest request;
+
+    // connect to finish signal
+    QObject::connect(m_manager, &QNetworkAccessManager::finished, this, [=] (QNetworkReply* reply) {
+        if (reply->error()) {
+            qDebug(LC) << reply->errorString();
+        }
+
+        QString answer = reply->readAll();
+        QVariantMap map;
+
+        if (answer != "") {
+            // convert to json
+            QJsonParseError parseerror;
+            QJsonDocument doc = QJsonDocument::fromJson(answer.toUtf8(), &parseerror);
+            if (parseerror.error != QJsonParseError::NoError) {
+                qDebug(LC) << "JSON error : " << parseerror.errorString();
+                return;
+            }
+
+            // createa a map object
+            map = doc.toVariant().toMap();
+        }
+
+        emit requestReady(map);
+
+        reply->deleteLater();
+    });
+
+    QObject::connect(m_manager, &QNetworkAccessManager::networkAccessibleChanged, this, [=](QNetworkAccessManager::NetworkAccessibility accessibility) {
+        qDebug(LC) << accessibility;
+    });
+
+    // set headers
+    request.setRawHeader("Content-Type", "application/json");
+    request.setRawHeader("Authorization", "Bearer " + m_access_token.toLocal8Bit());
+
+    // set the URL
+    // url = "/v1/me/player"
+    // params = "?q=stringquery&limit=20"
+    request.setUrl(m_apiURL + url + params);
+
+    // send the get request
+    m_manager->get(request);
+}
+
+void SpotifyBase::postRequest(const QString &url, const QString &params)
+{
+    // create new networkacces manager and request
+    m_manager = new QNetworkAccessManager(this);
+    QNetworkRequest request;
+
+    // connect to finish signal
+    QObject::connect(m_manager, &QNetworkAccessManager::finished, this, [=] (QNetworkReply* reply) {
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        if (statusCode != 204) {
+            qDebug(LC) << "ERROR WITH POST REQUEST " << statusCode;
+        }
+        reply->deleteLater();
+    });
+
+    QObject::connect(m_manager, &QNetworkAccessManager::networkAccessibleChanged, this, [=](QNetworkAccessManager::NetworkAccessibility accessibility) {
+        qDebug(LC) << accessibility;
+    });
+
+    // set headers
+    request.setRawHeader("Content-Type", "application/json");
+    request.setRawHeader("Authorization", "Bearer " + m_access_token.toLocal8Bit());
+
+    // set the URL
+    // url = "/v1/me/player"
+    // params = "?q=stringquery&limit=20"
+    request.setUrl(m_apiURL + url + params);
+
+    // send the get request
+    m_manager->post(request, "");
+}
+
+void SpotifyBase::putRequest(const QString &url, const QString &params)
+{
+    // create new networkacces manager and request
+    m_manager = new QNetworkAccessManager(this);
+    QNetworkRequest request;
+
+    // connect to finish signal
+    QObject::connect(m_manager, &QNetworkAccessManager::finished, this, [=] (QNetworkReply* reply) {
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        if (statusCode != 204) {
+            qDebug(LC) << "ERROR WITH PUT REQUEST " << statusCode;
+        }
+        reply->deleteLater();
+    });
+
+    QObject::connect(m_manager, &QNetworkAccessManager::networkAccessibleChanged, this, [=](QNetworkAccessManager::NetworkAccessibility accessibility) {
+        qDebug(LC) << accessibility;
+    });
+
+    // set headers
+    request.setRawHeader("Content-Type", "application/json");
+    request.setRawHeader("Authorization", "Bearer " + m_access_token.toLocal8Bit());
+
+    // set the URL
+    // url = "/v1/me/player"
+    // params = "?q=stringquery&limit=20"
+    request.setUrl(m_apiURL + url + params);
+
+    // send the get request
+    m_manager->put(request, "");
 }
 
 void SpotifyBase::onTokenTimeOut()
 {
     // get a new access token
     refreshAccessToken();
+}
+
+void SpotifyBase::onPollingTimerTimeout()
+{
+    getCurrentPlayer();
 }

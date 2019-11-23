@@ -46,14 +46,19 @@ public:
     Q_INVOKABLE void connect            ();
     Q_INVOKABLE void disconnect         ();
 
-    // Spotify API calls
+    // Spotify API authentication
     void             refreshAccessToken ();
+
+    // Spotify API calls
     Q_INVOKABLE void search             (QString query);
     Q_INVOKABLE void search             (QString query, QString type);
     Q_INVOKABLE void search             (QString query, QString type, QString limit, QString offset);
 
-    // Spotify Connect
+    // Spotify Connect API calls
     Q_INVOKABLE void getCurrentPlayer   ();
+
+signals:
+    void requestReady(const QVariantMap& obj);
 
 public slots:
     void sendCommand                    (const QString& type, const QString& entity_id, const QString& command, const QVariant& param);
@@ -68,6 +73,15 @@ private:
 
     QString                             m_entity_id;
 
+    // get and post requests
+    QNetworkAccessManager*              m_manager;
+    void getRequest                     (const QString& url, const QString& params);
+    void postRequest                    (const QString& url, const QString& params);
+    void putRequest                     (const QString& url, const QString& params);
+
+    // polling timer
+    QTimer*                             m_polling_timer;
+
     // Spotify auth stuff
     QString                             m_client_id;
     QString                             m_client_secret;
@@ -80,6 +94,7 @@ private:
 
 private slots:
     void                                onTokenTimeOut();
+    void                                onPollingTimerTimeout();
 };
 
 #endif // SPOTIFY_H
