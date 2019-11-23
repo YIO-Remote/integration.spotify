@@ -3,6 +3,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QLoggingCategory>
+#include <QQmlApplicationEngine>
 
 #include "spotify.h"
 #include "../remote-software/sources/entities/mediaplayerinterface.h"
@@ -74,6 +75,14 @@ void SpotifyBase::connect()
 {
     setState(CONNECTED);
     m_polling_timer->start();
+
+    if (m_startup) {
+        m_startup = false;
+
+        QObject* obj = m_config->getQMLObject("standbyControl");
+        QObject::connect(obj, SIGNAL(standByOn()), this, SLOT(onStandByOn()));
+        QObject::connect(obj, SIGNAL(standByOff()), this, SLOT(onStandByOff()));
+    }
 }
 
 void SpotifyBase::disconnect()
@@ -236,6 +245,16 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, con
             search(param.toString());
         }
     }
+}
+
+void SpotifyBase::onStandByOn()
+{
+    disconnect();
+}
+
+void SpotifyBase::onStandByOff()
+{
+    connect();
 }
 
 void SpotifyBase::updateEntity(const QString &entity_id, const QVariantMap &attr)

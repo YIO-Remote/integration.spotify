@@ -63,6 +63,8 @@ signals:
 
 public slots:
     void sendCommand                    (const QString& type, const QString& entity_id, const QString& command, const QVariant& param);
+    void onStandByOn                    ();
+    void onStandByOff                   ();
 
 private:
     void updateEntity                   (const QString& entity_id, const QVariantMap& attr);
@@ -71,6 +73,8 @@ private:
     NotificationsInterface*             m_notifications;
     YioAPIInterface*                    m_api;
     ConfigInterface*                    m_config;
+
+    bool                                m_startup = true;
 
     QString                             m_entity_id;
 
