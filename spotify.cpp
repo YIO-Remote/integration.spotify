@@ -286,7 +286,7 @@ void SpotifyBase::getRequest(const QString &url, const QString &params)
     // set the URL
     // url = "/v1/me/player"
     // params = "?q=stringquery&limit=20"
-    request.setUrl(m_apiURL + url + params);
+    request.setUrl(QUrl(m_apiURL + url + params));
 
     // send the get request
     m_manager->get(request);
@@ -318,7 +318,7 @@ void SpotifyBase::postRequest(const QString &url, const QString &params)
     // set the URL
     // url = "/v1/me/player"
     // params = "?q=stringquery&limit=20"
-    request.setUrl(m_apiURL + url + params);
+    request.setUrl(QUrl(m_apiURL + url + params));
 
     // send the get request
     m_manager->post(request, "");
@@ -350,7 +350,7 @@ void SpotifyBase::putRequest(const QString &url, const QString &params)
     // set the URL
     // url = "/v1/me/player"
     // params = "?q=stringquery&limit=20"
-    request.setUrl(m_apiURL + url + params);
+    request.setUrl(QUrl(m_apiURL + url + params));
 
     // send the get request
     m_manager->put(request, "");
