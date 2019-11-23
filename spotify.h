@@ -7,6 +7,7 @@
 #include <QTimer>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QtConcurrent/QtConcurrentRun>
 
 #include "../remote-software/sources/integrations/integration.h"
 #include "../remote-software/sources/integrations/integrationinterface.h"
@@ -27,7 +28,7 @@ class Spotify : public IntegrationInterface
 
 public:
     explicit Spotify() {}
-    void create                     (const QVariantMap& config, QObject *entities, QObject *notifications, QObject* api, QObject *configObj) override;
+    void create                         (const QVariantMap& config, QObject *entities, QObject *notifications, QObject* api, QObject *configObj) override;
 };
 
 
@@ -58,7 +59,7 @@ public:
     Q_INVOKABLE void getCurrentPlayer   ();
 
 signals:
-    void requestReady(const QVariantMap& obj);
+    void requestReady(const QVariantMap& obj, const QString& url);
 
 public slots:
     void sendCommand                    (const QString& type, const QString& entity_id, const QString& command, const QVariant& param);
@@ -74,7 +75,6 @@ private:
     QString                             m_entity_id;
 
     // get and post requests
-    QNetworkAccessManager*              m_manager;
     void getRequest                     (const QString& url, const QString& params);
     void postRequest                    (const QString& url, const QString& params);
     void putRequest                     (const QString& url, const QString& params);
