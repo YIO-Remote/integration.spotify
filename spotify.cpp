@@ -3,7 +3,6 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QLoggingCategory>
-#include <QQmlApplicationEngine>
 
 #include "spotify.h"
 #include "../remote-software/sources/entities/mediaplayerinterface.h"
@@ -44,7 +43,7 @@ SpotifyBase::SpotifyBase(QObject* parent)
     this->setParent(parent);
 
     m_polling_timer = new QTimer(this);
-    m_polling_timer->setInterval(2000);
+    m_polling_timer->setInterval(4000);
     QObject::connect(m_polling_timer, &QTimer::timeout, this, &SpotifyBase::onPollingTimerTimeout);
 }
 
