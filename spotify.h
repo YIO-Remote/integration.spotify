@@ -16,6 +16,7 @@
 #include "../remote-software/sources/notificationsinterface.h"
 #include "../remote-software/sources/yioapiinterface.h"
 #include "../remote-software/sources/configinterface.h"
+#include "../remote-software/components/media_player/sources/searchmodel_mediaplayer.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //// SPOTIFY FACTORY

@@ -172,7 +172,103 @@ void SpotifyBase::search(QString query, QString type, QString limit, QString off
 
     QObject::connect(this, &SpotifyBase::requestReady, this, [=] (const QVariantMap& map, const QString& rUrl) {
         if (rUrl == url) {
-            qDebug(LC) << map;
+
+            // get the albums
+            SearchModelList* albums = new SearchModelList();
+
+            if (map.contains("albums")) {
+                QVariantList map_albums = map.value("albums").toMap().value("items").toList();
+
+                for (int i=0; i<map_albums.length(); i++) {
+                    QString id = map_albums[i].toMap().value("id").toString();
+                    QString title = map_albums[i].toMap().value("name").toString();
+                    QString subtitle = map_albums[i].toMap().value("artists").toList()[0].toMap().value("name").toString();
+                    QString image = "";
+                    if (map_albums[i].toMap().contains("images") && map_albums[i].toMap().value("images").toList().length() > 0)
+                        image = map_albums[i].toMap().value("images").toList()[0].toMap().value("url").toString();
+
+                    SearchModelListItem item = SearchModelListItem(id, "album", title, subtitle, image, QVariant());
+                    albums->append(item);
+                }
+            }
+
+            // get the tracks
+            SearchModelList* tracks = new SearchModelList();
+
+            if (map.contains("tracks")) {
+                QVariantList map_tracks = map.value("tracks").toMap().value("items").toList();
+
+                for (int i=0; i<map_tracks.length(); i++) {
+                    QString id = map_tracks[i].toMap().value("id").toString();
+                    QString title = map_tracks[i].toMap().value("name").toString();
+                    QString subtitle = map_tracks[i].toMap().value("album").toMap().value("name").toString();
+                    QString image ="";
+                    if (map_tracks[i].toMap().value("album").toMap().contains("images") && map_tracks[i].toMap().value("album").toMap().value("images").toList().length() > 0)
+                        image = map_tracks[i].toMap().value("album").toMap().value("images").toList()[0].toMap().value("url").toString();
+
+                    SearchModelListItem item = SearchModelListItem(id, "album", title, subtitle, image, QVariant());
+                    tracks->append(item);
+                }
+            }
+
+            // get the artists
+            SearchModelList* artists = new SearchModelList();
+
+            if (map.contains("artists")) {
+                QVariantList map_artists = map.value("artists").toMap().value("items").toList();
+
+                for (int i=0; i<map_artists.length(); i++) {
+                    QString id = map_artists[i].toMap().value("id").toString();
+                    QString title = map_artists[i].toMap().value("name").toString();
+                    QString subtitle = "";
+                    QString image ="";
+                    if (map_artists[i].toMap().contains("images") && map_artists[i].toMap().value("images").toList().length() > 0)
+                        image = map_artists[i].toMap().value("images").toList()[0].toMap().value("url").toString();
+
+                    SearchModelListItem item = SearchModelListItem(id, "album", title, subtitle, image, QVariant());
+                    artists->append(item);
+                }
+            }
+
+            // get the playlists
+            SearchModelList* playlists = new SearchModelList();
+
+            if (map.contains("playlists")) {
+                QVariantList map_playlists = map.value("playlists").toMap().value("items").toList();
+
+                for (int i=0; i<map_playlists.length(); i++) {
+                    QString id = map_playlists[i].toMap().value("id").toString();
+                    QString title = map_playlists[i].toMap().value("name").toString();
+                    QString subtitle = map_playlists[i].toMap().value("owner").toMap().value("display_name").toString();
+                    QString image = "";
+                    if (map_playlists[i].toMap().contains("images") && map_playlists[i].toMap().value("images").toList().length() > 0)
+                        image = map_playlists[i].toMap().value("images").toList()[0].toMap().value("url").toString();
+
+                    SearchModelListItem item = SearchModelListItem(id, "album", title, subtitle, image, QVariant());
+                    playlists->append(item);
+                }
+            }
+
+
+            SearchModelItem* ialbums = new SearchModelItem("albums", albums);
+            SearchModelItem* itracks = new SearchModelItem("tracks", tracks);
+            SearchModelItem* iartists = new SearchModelItem("artists", artists);
+            SearchModelItem* iplaylists = new SearchModelItem("playlists", playlists);
+
+            SearchModel* m_model = new SearchModel();
+
+            m_model->append(ialbums);
+            m_model->append(itracks);
+            m_model->append(iartists);
+            m_model->append(iplaylists);
+
+            // update the entity
+            EntityInterface* entity = static_cast<EntityInterface*>(m_entities->getEntityInterface(m_entity_id));
+            if (entity) {
+                //                entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::SEARCHRESULT), searchResults);
+                MediaPlayerInterface* me = static_cast<MediaPlayerInterface*>(entity->getSpecificInterface());
+                me->setModel(m_model);
+            }
         }
     });
 

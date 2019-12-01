@@ -20,9 +20,12 @@ isEmpty(REMOTE_SRC) {
 
 HEADERS         = spotify.h \
                   $$REMOTE_SRC/sources/integrations/integration.h \
-                  $$REMOTE_SRC/sources/integrations/integrationinterface.h
+                  $$REMOTE_SRC/sources/integrations/integrationinterface.h \
+                  $$REMOTE_SRC/components/media_player/sources/searchmodel_mediaplayer.h
                   
-SOURCES         = spotify.cpp
+SOURCES         = spotify.cpp \
+                  $$REMOTE_SRC/components/media_player/sources/searchmodel_mediaplayer.cpp
+
 TARGET          = spotify
 
 # Configure destination path. DESTDIR is set in qmake-destination-path.pri
