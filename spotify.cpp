@@ -184,8 +184,16 @@ void SpotifyBase::search(QString query, QString type, QString limit, QString off
                     QString title = map_albums[i].toMap().value("name").toString();
                     QString subtitle = map_albums[i].toMap().value("artists").toList()[0].toMap().value("name").toString();
                     QString image = "";
-                    if (map_albums[i].toMap().contains("images") && map_albums[i].toMap().value("images").toList().length() > 0)
-                        image = map_albums[i].toMap().value("images").toList()[0].toMap().value("url").toString();
+                    if (map_albums[i].toMap().contains("images") && map_albums[i].toMap().value("images").toList().length() > 0) {
+                        QVariantList images = map_albums[i].toMap().value("images").toList();
+                        for (int k=0; k<images.length(); k++) {
+                            if (images[k].toMap().value("width").toInt() == 300) {
+                                image = images[k].toMap().value("url").toString();
+                            }
+                        }
+                        if (image == "")
+                            image = map_albums[i].toMap().value("images").toList()[0].toMap().value("url").toString();
+                    }
 
                     SearchModelListItem item = SearchModelListItem(id, "album", title, subtitle, image, QVariant());
                     albums->append(item);
@@ -203,8 +211,16 @@ void SpotifyBase::search(QString query, QString type, QString limit, QString off
                     QString title = map_tracks[i].toMap().value("name").toString();
                     QString subtitle = map_tracks[i].toMap().value("album").toMap().value("name").toString();
                     QString image ="";
-                    if (map_tracks[i].toMap().value("album").toMap().contains("images") && map_tracks[i].toMap().value("album").toMap().value("images").toList().length() > 0)
-                        image = map_tracks[i].toMap().value("album").toMap().value("images").toList()[0].toMap().value("url").toString();
+                    if (map_tracks[i].toMap().value("album").toMap().contains("images") && map_tracks[i].toMap().value("album").toMap().value("images").toList().length() > 0) {
+                        QVariantList images = map_tracks[i].toMap().value("album").toMap().value("images").toList();
+                        for (int k=0; k<images.length(); k++) {
+                            if (images[k].toMap().value("width").toInt() == 64) {
+                                image = images[k].toMap().value("url").toString();
+                            }
+                        }
+                        if (image == "")
+                            image = map_tracks[i].toMap().value("album").toMap().value("images").toList()[0].toMap().value("url").toString();
+                    }
 
                     SearchModelListItem item = SearchModelListItem(id, "track", title, subtitle, image, QVariant());
                     tracks->append(item);
@@ -222,8 +238,16 @@ void SpotifyBase::search(QString query, QString type, QString limit, QString off
                     QString title = map_artists[i].toMap().value("name").toString();
                     QString subtitle = "";
                     QString image ="";
-                    if (map_artists[i].toMap().contains("images") && map_artists[i].toMap().value("images").toList().length() > 0)
-                        image = map_artists[i].toMap().value("images").toList()[0].toMap().value("url").toString();
+                    if (map_artists[i].toMap().contains("images") && map_artists[i].toMap().value("images").toList().length() > 0) {
+                        QVariantList images = map_artists[i].toMap().value("images").toList();
+                        for (int k=0; k<images.length(); k++) {
+                            if (images[k].toMap().value("width").toInt() == 64) {
+                                image = images[k].toMap().value("url").toString();
+                            }
+                        }
+                        if (image == "")
+                            image = map_artists[i].toMap().value("images").toList()[0].toMap().value("url").toString();
+                    }
 
                     SearchModelListItem item = SearchModelListItem(id, "artist", title, subtitle, image, QVariant());
                     artists->append(item);
@@ -241,8 +265,16 @@ void SpotifyBase::search(QString query, QString type, QString limit, QString off
                     QString title = map_playlists[i].toMap().value("name").toString();
                     QString subtitle = map_playlists[i].toMap().value("owner").toMap().value("display_name").toString();
                     QString image = "";
-                    if (map_playlists[i].toMap().contains("images") && map_playlists[i].toMap().value("images").toList().length() > 0)
-                        image = map_playlists[i].toMap().value("images").toList()[0].toMap().value("url").toString();
+                    if (map_playlists[i].toMap().contains("images") && map_playlists[i].toMap().value("images").toList().length() > 0) {
+                        QVariantList images = map_playlists[i].toMap().value("images").toList();
+                        for (int k=0; k<images.length(); k++) {
+                            if (images[k].toMap().value("width").toInt() == 300) {
+                                image = images[k].toMap().value("url").toString();
+                            }
+                        }
+                        if (image == "")
+                            image = map_playlists[i].toMap().value("images").toList()[0].toMap().value("url").toString();
+                    }
 
                     SearchModelListItem item = SearchModelListItem(id, "playlist", title, subtitle, image, QVariant());
                     playlists->append(item);
