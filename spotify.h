@@ -8,9 +8,10 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QtConcurrent/QtConcurrentRun>
+#include <QLoggingCategory>
 
 #include "../remote-software/sources/integrations/integration.h"
-#include "../remote-software/sources/integrations/integrationinterface.h"
+#include "../remote-software/sources/integrations/plugininterface.h"
 #include "../remote-software/sources/entities/entitiesinterface.h"
 #include "../remote-software/sources/entities/entityinterface.h"
 #include "../remote-software/sources/notificationsinterface.h"
@@ -21,15 +22,24 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //// SPOTIFY FACTORY
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-class Spotify : public IntegrationInterface
+class Spotify : public PluginInterface
 {
     Q_OBJECT
-    Q_PLUGIN_METADATA(IID "YIO.IntegrationInterface" FILE "spotify.json")
-    Q_INTERFACES(IntegrationInterface)
+    Q_PLUGIN_METADATA(IID "YIO.PluginInterface" FILE "spotify.json")
+    Q_INTERFACES(PluginInterface)
 
 public:
-    explicit Spotify() {}
+    explicit Spotify() :
+        m_log("spotify")
+    {}
     void create                         (const QVariantMap& config, QObject *entities, QObject *notifications, QObject* api, QObject *configObj) override;
+
+    void setLogEnabled                  (QtMsgType msgType, bool enable) override
+    {
+        m_log.setEnabled(msgType, enable);
+    }
+private:
+    QLoggingCategory    m_log;
 };
 
 
@@ -42,11 +52,12 @@ class SpotifyBase : public Integration
     Q_OBJECT
 
 public:
-    explicit SpotifyBase(QObject *parent);
+    explicit SpotifyBase(QLoggingCategory& log, QObject *parent);
 
     Q_INVOKABLE void setup              (const QVariantMap& config, QObject *entities, QObject *notifications, QObject* api, QObject *configObj);
     Q_INVOKABLE void connect            ();
     Q_INVOKABLE void disconnect         ();
+    Q_INVOKABLE void sendCommand        (const QString& type, const QString& entity_id, const QString& command, const QVariant& param);
 
     // Spotify API authentication
     void             refreshAccessToken ();
@@ -63,14 +74,12 @@ signals:
     void requestReady(const QVariantMap& obj, const QString& url);
 
 public slots:
-    void sendCommand                    (const QString& type, const QString& entity_id, const QString& command, const QVariant& param);
     void onStandByOn                    ();
     void onStandByOff                   ();
 
 private:
     void updateEntity                   (const QString& entity_id, const QVariantMap& attr);
 
-    EntitiesInterface*                  m_entities;
     NotificationsInterface*             m_notifications;
     YioAPIInterface*                    m_api;
     ConfigInterface*                    m_config;
@@ -96,6 +105,8 @@ private:
     QTimer*                             m_tokenTimeOutTimer;
 
     QString                             m_apiURL = "https://api.spotify.com";
+
+    QLoggingCategory&                   m_log;
 
 private slots:
     void                                onTokenTimeOut();
