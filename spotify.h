@@ -39,6 +39,7 @@
 #include "../remote-software/sources/yioapiinterface.h"
 #include "../remote-software/sources/configinterface.h"
 #include "../remote-software/components/media_player/sources/searchmodel_mediaplayer.h"
+#include "../remote-software/components/media_player/sources/albummodel_mediaplayer.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //// SPOTIFY FACTORY
@@ -77,6 +78,7 @@ public:
     Q_INVOKABLE void search             (QString query);
     Q_INVOKABLE void search             (QString query, QString type);
     Q_INVOKABLE void search             (QString query, QString type, QString limit, QString offset);
+    void getAlbum                       (QString id);
 
     // Spotify Connect API calls
     Q_INVOKABLE void getCurrentPlayer   ();
