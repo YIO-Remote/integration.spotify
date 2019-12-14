@@ -513,7 +513,7 @@ void SpotifyBase::getCurrentPlayer()
                     entity->updateAttrByIndex(MediaPlayerDef::MEDIAIMAGE, map.value("item").toMap().value("album").toMap().value("images").toList()[0].toMap().value("url").toString());
 
                     // get the device
-                    entity->updateAttrByIndex(MediaPlayerDef::MEDIATYPE, map.value("device").toMap().value("name").toString());
+                    entity->updateAttrByIndex(MediaPlayerDef::SOURCE, map.value("device").toMap().value("name").toString());
 
                     // get the volume
                     entity->updateAttrByIndex(MediaPlayerDef::VOLUME, map.value("device").toMap().value("volume_percent").toInt());
@@ -537,7 +537,7 @@ void SpotifyBase::getCurrentPlayer()
 
                 } else {
                     entity->updateAttrByIndex(MediaPlayerDef::MEDIAIMAGE, "");
-                    entity->updateAttrByIndex(MediaPlayerDef::MEDIATYPE, "");
+                    entity->updateAttrByIndex(MediaPlayerDef::SOURCE, "");
                     entity->updateAttrByIndex(MediaPlayerDef::MEDIATITLE, "");
                     entity->updateAttrByIndex(MediaPlayerDef::MEDIAARTIST, "");
                     entity->updateAttrByIndex(MediaPlayerDef::MEDIADURATION, 0);
