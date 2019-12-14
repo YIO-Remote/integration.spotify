@@ -79,6 +79,8 @@ public:
     Q_INVOKABLE void search             (QString query, QString type);
     Q_INVOKABLE void search             (QString query, QString type, QString limit, QString offset);
     void getAlbum                       (QString id);
+    void getPlaylist                    (QString id);
+    void getUserPlaylists               ();
 
     // Spotify Connect API calls
     Q_INVOKABLE void getCurrentPlayer   ();
