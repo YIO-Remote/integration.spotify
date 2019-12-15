@@ -29,9 +29,10 @@
 #include "spotify.h"
 #include "../remote-software/sources/entities/mediaplayerinterface.h"
 
-Q_LOGGING_CATEGORY(LC, "SPOTIFY INTEGRATION");
+IntegrationInterface::~IntegrationInterface()
+{}
 
-void Spotify::create(const QVariantMap &config, QObject *entities, QObject *notifications, QObject *api, QObject *configObj)
+void SpotifyPlugin::create(const QVariantMap &config, QObject *entities, QObject *notifications, QObject *api, QObject *configObj)
 {
     QMap<QObject *, QVariant> returnData;
 
@@ -48,7 +49,7 @@ void Spotify::create(const QVariantMap &config, QObject *entities, QObject *noti
 
     for (int i=0; i<data.length(); i++)
     {
-        SpotifyBase* spotifyObj = new SpotifyBase(this);
+        SpotifyBase* spotifyObj = new SpotifyBase(m_log, this);
         spotifyObj->setup(data[i].toMap(), entities, notifications, api, configObj);
 
         QVariantMap d = data[i].toMap();
@@ -60,7 +61,8 @@ void Spotify::create(const QVariantMap &config, QObject *entities, QObject *noti
     emit createDone(returnData);
 }
 
-SpotifyBase::SpotifyBase(QObject* parent)
+SpotifyBase::SpotifyBase(QLoggingCategory& log, QObject* parent) :
+    m_log(log)
 {
     this->setParent(parent);
 
@@ -71,12 +73,10 @@ SpotifyBase::SpotifyBase(QObject* parent)
 
 void SpotifyBase::setup(const QVariantMap& config, QObject* entities, QObject* notifications, QObject* api, QObject* configObj)
 {
+    Integration::setup(config, entities);   // sets id and friendly_name
+
     for (QVariantMap::const_iterator iter = config.begin(); iter != config.end(); ++iter) {
-        if (iter.key() == "friendly_name")
-            setFriendlyName(iter.value().toString());
-        else if (iter.key() == "id")
-            setIntegrationId(iter.value().toString());
-        else if (iter.key() == "data") {
+        if (iter.key() == "data") {
             QVariantMap map = iter.value().toMap();
             m_client_id = map.value("client_id").toString();
             m_client_secret = map.value("client_secret").toString();
@@ -85,8 +85,6 @@ void SpotifyBase::setup(const QVariantMap& config, QObject* entities, QObject* n
             m_entity_id = map.value("entity_id").toString();
         }
     }
-
-    m_entities = qobject_cast<EntitiesInterface *>(entities);
     m_notifications = qobject_cast<NotificationsInterface *>(notifications);
     m_api = qobject_cast<YioAPIInterface *>(api);
     m_config = qobject_cast<ConfigInterface *>(configObj);
@@ -106,6 +104,7 @@ void SpotifyBase::connect()
     if (m_startup) {
         m_startup = false;
 
+        // can be removed when enter/Leave standby is called
         QObject* obj = m_config->getQMLObject("standbyControl");
         QObject::connect(obj, SIGNAL(standByOn()), this, SLOT(onStandByOn()));
         QObject::connect(obj, SIGNAL(standByOff()), this, SLOT(onStandByOff()));
@@ -127,8 +126,8 @@ void SpotifyBase::refreshAccessToken()
 
     QObject::connect(manager, &QNetworkAccessManager::finished, context, [=] (QNetworkReply* reply) {
         if (reply->error()) {
-            qWarning(LC) << reply->errorString();
-            qWarning(LC) << reply->readAll();
+            qCWarning(m_log) << reply->errorString();
+            qCWarning(m_log) << reply->readAll();
         }
 
         QString answer = reply->readAll();
@@ -137,7 +136,7 @@ void SpotifyBase::refreshAccessToken()
         QJsonParseError parseerror;
         QJsonDocument doc = QJsonDocument::fromJson(answer.toUtf8(), &parseerror);
         if (parseerror.error != QJsonParseError::NoError) {
-            qWarning(LC) << "JSON error : " << parseerror.errorString();
+            qCWarning(m_log) << "JSON error : " << parseerror.errorString();
             return;
         }
         QVariantMap map = doc.toVariant().toMap();
@@ -167,7 +166,7 @@ void SpotifyBase::refreshAccessToken()
     });
 
     QObject::connect(manager, &QNetworkAccessManager::networkAccessibleChanged, context, [=](QNetworkAccessManager::NetworkAccessibility accessibility) {
-        qDebug(LC) << accessibility;
+        qCDebug(m_log) << accessibility;
     });
 
     QByteArray postData;
@@ -358,7 +357,7 @@ void SpotifyBase::getAlbum(QString id)
 
     QObject::connect(this, &SpotifyBase::requestReady, context, [=] (const QVariantMap& map, const QString& rUrl) {
         if (rUrl == url) {
-            qDebug(LC) << "GET ALBUM";
+            qCDebug(m_log) << "GET ALBUM";
             QString id = map.value("id").toString();
             QString title = map.value("name").toString();
             QString subtitle = map.value("artists").toList()[0].toMap().value("name").toString();
@@ -405,7 +404,7 @@ void SpotifyBase::getPlaylist(QString id)
 
     QObject::connect(this, &SpotifyBase::requestReady, context, [=] (const QVariantMap& map, const QString& rUrl) {
         if (rUrl == url) {
-            qDebug(LC) << "GET PLAYLIST";
+            qCDebug(m_log) << "GET PLAYLIST";
             QString id = map.value("id").toString();
             QString title = map.value("name").toString();
             QString subtitle = map.value("owner").toMap().value("display_name").toString();
@@ -452,7 +451,7 @@ void SpotifyBase::getUserPlaylists()
 
     QObject::connect(this, &SpotifyBase::requestReady, context, [=] (const QVariantMap& map, const QString& rUrl) {
         if (rUrl == url) {
-            qDebug(LC) << "GET USERS PLAYLIST";
+            qCDebug(m_log) << "GET USERS PLAYLIST";
             QString id = "";
             QString title = "";
             QString subtitle = "";
@@ -552,10 +551,12 @@ void SpotifyBase::getCurrentPlayer()
     getRequest(url, "");
 }
 
-void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, const QString& command, const QVariant& param)
+void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, int command, const QVariant& param)
 {
     if (type == "media_player" && entity_id == m_entity_id) {
-        if (command == "PLAY") {
+        if (command == MediaPlayerDef::C_PLAY)
+            putRequest("/v1/me/player/play", "");           // normal play without browsing
+        else if (command == MediaPlayerDef::C_PLAY_ITEM) {
             if (param == "")
                 putRequest("/v1/me/player/play", "");
             else {
@@ -565,14 +566,14 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, con
                         QObject* context = new QObject(this);
                         QObject::connect(this, &SpotifyBase::requestReady, context, [=] (const QVariantMap& map, const QString& rUrl) {
                             if (rUrl == url) {
-                                qDebug(LC) << "PLAY MEDIA" << map.value("uri").toString();
+                                qCDebug(m_log) << "PLAY MEDIA" << map.value("uri").toString();
                                 QVariantMap rMap;
                                 QStringList rList;
                                 rList.append(map.value("uri").toString());
                                 rMap.insert("uris",rList);
                                 QJsonDocument doc = QJsonDocument::fromVariant(rMap);
                                 QString message = doc.toJson(QJsonDocument::JsonFormat::Compact);
-                                qDebug(LC) << message;
+                                qCDebug(m_log) << message;
                                 putRequest("/v1/me/player/play", message);
                             }
                             delete  context;
@@ -584,12 +585,12 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, con
                         QObject::connect(this, &SpotifyBase::requestReady, context, [=] (const QVariantMap& map, const QString& rUrl) {
                             if (rUrl == url) {
                                 QString url = "/v1/me/player/play";
-                                qDebug(LC) << "PLAY MEDIA" << map.value("uri").toString();
+                                qCDebug(m_log) << "PLAY MEDIA" << map.value("uri").toString();
                                 QVariantMap rMap;
                                 rMap.insert("context_uri", map.value("uri").toString());
                                 QJsonDocument doc = QJsonDocument::fromVariant(rMap);
                                 QString message = doc.toJson(QJsonDocument::JsonFormat::Compact);
-                                qDebug(LC) << message;
+                                qCDebug(m_log) << message;
                                 putRequest("/v1/me/player/play", message);
                             }
                             delete  context;
@@ -601,12 +602,12 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, con
                         QObject::connect(this, &SpotifyBase::requestReady, context, [=] (const QVariantMap& map, const QString& rUrl) {
                             if (rUrl == url) {
                                 QString url = "/v1/me/player/play";
-                                qDebug(LC) << "PLAY MEDIA" << map.value("uri").toString();
+                                qCDebug(m_log) << "PLAY MEDIA" << map.value("uri").toString();
                                 QVariantMap rMap;
                                 rMap.insert("context_uri", map.value("uri").toString());
                                 QJsonDocument doc = QJsonDocument::fromVariant(rMap);
                                 QString message = doc.toJson(QJsonDocument::JsonFormat::Compact);
-                                qDebug(LC) << message;
+                                qCDebug(m_log) << message;
                                 putRequest("/v1/me/player/play", message);
                             }
                             delete context;
@@ -618,12 +619,12 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, con
                         QObject::connect(this, &SpotifyBase::requestReady, context, [=] (const QVariantMap& map, const QString& rUrl) {
                             if (rUrl == url) {
                                 QString url = "/v1/me/player/play";
-                                qDebug(LC) << "PLAY MEDIA" << map.value("uri").toString();
+                                qDebug(m_log) << "PLAY MEDIA" << map.value("uri").toString();
                                 QVariantMap rMap;
                                 rMap.insert("context_uri", map.value("uri").toString());
                                 QJsonDocument doc = QJsonDocument::fromVariant(rMap);
                                 QString message = doc.toJson(QJsonDocument::JsonFormat::Compact);
-                                qDebug(LC) << message;
+                                qCDebug(m_log) << message;
                                 putRequest("/v1/me/player/play", message);
                             }
                             delete  context;
@@ -633,19 +634,19 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, con
                 }
             }
         }
-        else if (command == "PAUSE")
+        else if (command == MediaPlayerDef::C_PAUSE)
             putRequest("/v1/me/player/pause", "");
-        else if (command == "NEXT")
+        else if (command == MediaPlayerDef::C_NEXT)
             postRequest("/v1/me/player/next", "");
-        else if (command == "PREVIOUS")
+        else if (command == MediaPlayerDef::C_PREVIOUS)
             postRequest("/v1/me/player/previous", "");
-        else if (command == "VOLUME") {
+        else if (command == MediaPlayerDef::C_VOLUME_SET) {
             putRequest("/v1/me/player/volume", "?=volume_percent=" + param.toString());
-        } else if (command == "SEARCH") {
+        } else if (command == MediaPlayerDef::C_SEARCH) {
             search(param.toString());
-        } else if (command == "GETALBUM") {
+        } else if (command == MediaPlayerDef::C_GETALBUM) {
             getAlbum(param.toString());
-        } else if (command == "GETPLAYLIST") {
+        } else if (command == MediaPlayerDef::C_GETPLAYLIST) {
             if (param.toString() == "user") {
                 getUserPlaylists();
             } else {
@@ -653,6 +654,13 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, con
             }
         }
     }
+}
+
+void SpotifyBase::enterStandby() {
+    disconnect();
+}
+void SpotifyBase::leaveStandby() {
+    connect();
 }
 
 void SpotifyBase::onStandByOn()
@@ -670,12 +678,12 @@ void SpotifyBase::updateEntity(const QString &entity_id, const QVariantMap &attr
     EntityInterface* entity = static_cast<EntityInterface*>(m_entities->getEntityInterface(entity_id));
     if (entity) {
         // update the media player
-        entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::STATE), attr.value("state").toInt());
-        entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::SOURCE), attr.value("device").toString());
-        entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::VOLUME), attr.value("volume").toInt());
-        entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIATITLE), attr.value("title").toString());
-        entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIAARTIST), attr.value("artist").toString());
-        entity->updateAttrByIndex(static_cast<int>(MediaPlayerDef::Attributes::MEDIAIMAGE), attr.value("image").toString());
+        entity->updateAttrByIndex(MediaPlayerDef::Attributes::STATE, attr.value("state").toInt());
+        entity->updateAttrByIndex(MediaPlayerDef::Attributes::SOURCE, attr.value("device").toString());
+        entity->updateAttrByIndex(MediaPlayerDef::Attributes::VOLUME, attr.value("volume").toInt());
+        entity->updateAttrByIndex(MediaPlayerDef::Attributes::MEDIATITLE, attr.value("title").toString());
+        entity->updateAttrByIndex(MediaPlayerDef::Attributes::MEDIAARTIST, attr.value("artist").toString());
+        entity->updateAttrByIndex(MediaPlayerDef::Attributes::MEDIAIMAGE, attr.value("image").toString());
     }
 }
 
@@ -690,7 +698,7 @@ void SpotifyBase::getRequest(const QString &url, const QString &params)
     // connect to finish signal
     QObject::connect(manager, &QNetworkAccessManager::finished, context, [=] (QNetworkReply* reply) {
         if (reply->error()) {
-            qWarning(LC) << reply->errorString();
+            qCWarning(m_log) << reply->errorString();
         }
 
         QString answer = reply->readAll();
@@ -700,7 +708,7 @@ void SpotifyBase::getRequest(const QString &url, const QString &params)
             QJsonParseError parseerror;
             QJsonDocument doc = QJsonDocument::fromJson(answer.toUtf8(), &parseerror);
             if (parseerror.error != QJsonParseError::NoError) {
-                qWarning(LC) << "JSON error : " << parseerror.errorString();
+                qCWarning(m_log) << "JSON error : " << parseerror.errorString();
                 return;
             }
 
@@ -715,7 +723,7 @@ void SpotifyBase::getRequest(const QString &url, const QString &params)
     });
 
     QObject::connect(manager, &QNetworkAccessManager::networkAccessibleChanged, context, [=](QNetworkAccessManager::NetworkAccessibility accessibility) {
-        qDebug(LC) << accessibility;
+        qCDebug(m_log) << accessibility;
     });
 
     // set headers
@@ -743,14 +751,14 @@ void SpotifyBase::postRequest(const QString &url, const QString &params)
     QObject::connect(manager, &QNetworkAccessManager::finished, context, [=] (QNetworkReply* reply) {
         int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
         if (statusCode != 204) {
-            qWarning(LC) << "ERROR WITH POST REQUEST " << statusCode;
+            qCWarning(m_log) << "ERROR WITH POST REQUEST " << statusCode;
         }
         reply->deleteLater();
         delete context;
     });
 
     QObject::connect(manager, &QNetworkAccessManager::networkAccessibleChanged, context, [=](QNetworkAccessManager::NetworkAccessibility accessibility) {
-        qDebug(LC) << accessibility;
+        qCDebug(m_log) << accessibility;
     });
 
     // set headers
@@ -778,14 +786,14 @@ void SpotifyBase::putRequest(const QString &url, const QString &params)
     QObject::connect(manager, &QNetworkAccessManager::finished, context, [=] (QNetworkReply* reply) {
         int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
         if (statusCode != 204) {
-            qWarning(LC) << "ERROR WITH PUT REQUEST " << statusCode;
+            qCWarning(m_log) << "ERROR WITH PUT REQUEST " << statusCode;
         }
         reply->deleteLater();
         delete context;
     });
 
     QObject::connect(manager, &QNetworkAccessManager::networkAccessibleChanged, context, [=](QNetworkAccessManager::NetworkAccessibility accessibility) {
-        qDebug(LC) << accessibility;
+        qCDebug(m_log) << accessibility;
     });
 
     // set headers
