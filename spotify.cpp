@@ -109,6 +109,8 @@ void SpotifyBase::connect()
         QObject::connect(obj, SIGNAL(standByOn()), this, SLOT(onStandByOn()));
         QObject::connect(obj, SIGNAL(standByOff()), this, SLOT(onStandByOff()));
     }
+
+    qDebug() << "STARTING SPOTIFY";
 }
 
 void SpotifyBase::disconnect()
@@ -619,7 +621,7 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, int
                         QObject::connect(this, &SpotifyBase::requestReady, context, [=] (const QVariantMap& map, const QString& rUrl) {
                             if (rUrl == url) {
                                 QString url = "/v1/me/player/play";
-                                qDebug(m_log) << "PLAY MEDIA" << map.value("uri").toString();
+                                qCDebug(m_log) << "PLAY MEDIA" << map.value("uri").toString();
                                 QVariantMap rMap;
                                 rMap.insert("context_uri", map.value("uri").toString());
                                 QJsonDocument doc = QJsonDocument::fromVariant(rMap);
@@ -720,6 +722,7 @@ void SpotifyBase::getRequest(const QString &url, const QString &params)
 
         reply->deleteLater();
         delete context;
+        manager->deleteLater();
     });
 
     QObject::connect(manager, &QNetworkAccessManager::networkAccessibleChanged, context, [=](QNetworkAccessManager::NetworkAccessibility accessibility) {
@@ -755,6 +758,7 @@ void SpotifyBase::postRequest(const QString &url, const QString &params)
         }
         reply->deleteLater();
         delete context;
+        manager->deleteLater();
     });
 
     QObject::connect(manager, &QNetworkAccessManager::networkAccessibleChanged, context, [=](QNetworkAccessManager::NetworkAccessibility accessibility) {
@@ -790,6 +794,7 @@ void SpotifyBase::putRequest(const QString &url, const QString &params)
         }
         reply->deleteLater();
         delete context;
+        manager->deleteLater();
     });
 
     QObject::connect(manager, &QNetworkAccessManager::networkAccessibleChanged, context, [=](QNetworkAccessManager::NetworkAccessibility accessibility) {
