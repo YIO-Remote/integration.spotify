@@ -153,7 +153,7 @@ void SpotifyBase::refreshAccessToken() {
         m_tokenTimeOutTimer->start((m_token_expire - 60) * 1000);
 
         reply->deleteLater();
-        delete context;
+        context->deleteLater();
         manager->deleteLater();
     });
 
@@ -339,7 +339,7 @@ void SpotifyBase::search(QString query, QString type, QString limit, QString off
                 me->setSearchModel(m_model);
             }
         }
-        delete context;
+        context->deleteLater();
     });
 
     getRequest(url, "?q=" + query + "&type=" + type + "&limit=" + limit + "&offset=" + offset);
@@ -388,7 +388,7 @@ void SpotifyBase::getAlbum(QString id) {
                 me->setBrowseModel(album);
             }
         }
-        delete context;
+        context->deleteLater();
     });
     getRequest(url, id);
 }
@@ -445,7 +445,7 @@ void SpotifyBase::getPlaylist(QString id) {
                 me->setBrowseModel(album);
             }
         }
-        delete context;
+        context->deleteLater();
     });
     getRequest(url, id);
 }
@@ -496,7 +496,7 @@ void SpotifyBase::getUserPlaylists() {
                 me->setBrowseModel(album);
             }
         }
-        delete context;
+        context->deleteLater();
     });
     getRequest(url, "");
 }
@@ -565,7 +565,7 @@ void SpotifyBase::getCurrentPlayer() {
                 }
             }
         }
-        delete context;
+        context->deleteLater();
     });
 
     getRequest(url, "");
@@ -596,7 +596,7 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, int
                                                  qCDebug(m_log) << message;
                                                  putRequest("/v1/me/player/play", message);
                                              }
-                                             delete context;
+                                             context->deleteLater();
                                          });
                         getRequest(url, param.toMap().value("id").toString());
                     } else if (param.toMap().value("type").toString() == "album") {
@@ -614,7 +614,7 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, int
                                                  qCDebug(m_log) << message;
                                                  putRequest("/v1/me/player/play", message);
                                              }
-                                             delete context;
+                                             context->deleteLater();
                                          });
                         getRequest(url, param.toMap().value("id").toString());
                     } else if (param.toMap().value("type").toString() == "artist") {
@@ -632,7 +632,7 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, int
                                                  qCDebug(m_log) << message;
                                                  putRequest("/v1/me/player/play", message);
                                              }
-                                             delete context;
+                                             context->deleteLater();
                                          });
                         getRequest(url, param.toMap().value("id").toString());
                     } else if (param.toMap().value("type").toString() == "playlist") {
@@ -650,7 +650,7 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, int
                                                  qCDebug(m_log) << message;
                                                  putRequest("/v1/me/player/play", message);
                                              }
-                                             delete context;
+                                             context->deleteLater();
                                          });
                         getRequest(url, param.toMap().value("id").toString());
                     }
@@ -728,7 +728,7 @@ void SpotifyBase::getRequest(const QString& url, const QString& params) {
         }
 
         reply->deleteLater();
-        delete context;
+        context->deleteLater();
         manager->deleteLater();
     });
 
@@ -763,7 +763,7 @@ void SpotifyBase::postRequest(const QString& url, const QString& params) {
             qCWarning(m_log) << "ERROR WITH POST REQUEST " << statusCode;
         }
         reply->deleteLater();
-        delete context;
+        context->deleteLater();
         manager->deleteLater();
     });
 
@@ -798,7 +798,7 @@ void SpotifyBase::putRequest(const QString& url, const QString& params) {
             qCWarning(m_log) << "ERROR WITH PUT REQUEST " << statusCode;
         }
         reply->deleteLater();
-        delete context;
+        context->deleteLater();
         manager->deleteLater();
     });
 
