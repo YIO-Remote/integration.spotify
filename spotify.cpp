@@ -118,7 +118,7 @@ void SpotifyBase::refreshAccessToken() {
     QObject::connect(manager, &QNetworkAccessManager::finished, context, [=](QNetworkReply* reply) {
         if (reply->error()) {
             qCWarning(m_log) << reply->errorString();
-            qCWarning(m_log) << reply->readAll();
+            //            qCWarning(m_log) << reply->readAll();
         }
 
         QString answer = reply->readAll();
