@@ -28,7 +28,7 @@
 #include <QLoggingCategory>
 #include <QtDebug>
 
-#include "../remote-software/sources/entities/mediaplayerinterface.h"
+#include "yio-interface/entities/mediaplayerinterface.h"
 
 IntegrationInterface::~IntegrationInterface() {}
 
@@ -75,16 +75,16 @@ void SpotifyBase::setup(const QVariantMap& config, QObject* entities, QObject* n
     for (QVariantMap::const_iterator iter = config.begin(); iter != config.end(); ++iter) {
         if (iter.key() == "data") {
             QVariantMap map = iter.value().toMap();
-            m_client_id     = map.value("client_id").toString();
+            m_client_id = map.value("client_id").toString();
             m_client_secret = map.value("client_secret").toString();
-            m_access_token  = map.value("access_token").toString();
+            m_access_token = map.value("access_token").toString();
             m_refresh_token = map.value("refresh_token").toString();
-            m_entity_id     = map.value("entity_id").toString();
+            m_entity_id = map.value("entity_id").toString();
         }
     }
     m_notifications = qobject_cast<NotificationsInterface*>(notifications);
-    m_api           = qobject_cast<YioAPIInterface*>(api);
-    m_config        = qobject_cast<ConfigInterface*>(configObj);
+    m_api = qobject_cast<YioAPIInterface*>(api);
+    m_config = qobject_cast<ConfigInterface*>(configObj);
 }
 
 void SpotifyBase::connect() {
@@ -133,14 +133,17 @@ void SpotifyBase::refreshAccessToken() {
         QVariantMap map = doc.toVariant().toMap();
 
         // store the refresh and acccess tokens
-        if (map.contains("access_token"))
+        if (map.contains("access_token")) {
             m_access_token = map.value("access_token").toString();
+        }
 
-        if (map.contains("expires_in"))
+        if (map.contains("expires_in")) {
             m_token_expire = map.value("expires_in").toInt();
+        }
 
-        if (map.contains("refresh_token"))
+        if (map.contains("refresh_token")) {
             m_refresh_token = map.value("refresh_token").toString();
+        }
 
         // start timer with the expire date on the access token
         m_tokenTimeOutTimer = new QTimer(this);
@@ -199,7 +202,7 @@ void SpotifyBase::search(QString query, QString type, QString limit, QString off
                 QStringList commands = {"PLAY", "ARTISTRADIO"};
 
                 for (int i = 0; i < map_albums.length(); i++) {
-                    QString id    = map_albums[i].toMap().value("id").toString();
+                    QString id = map_albums[i].toMap().value("id").toString();
                     QString title = map_albums[i].toMap().value("name").toString();
                     QString subtitle =
                         map_albums[i].toMap().value("artists").toList()[0].toMap().value("name").toString();
@@ -212,8 +215,9 @@ void SpotifyBase::search(QString query, QString type, QString limit, QString off
                                 image = images[k].toMap().value("url").toString();
                             }
                         }
-                        if (image == "")
+                        if (image == "") {
                             image = map_albums[i].toMap().value("images").toList()[0].toMap().value("url").toString();
+                        }
                     }
 
                     SearchModelListItem item = SearchModelListItem(id, "album", title, subtitle, image, QVariant());
@@ -230,10 +234,10 @@ void SpotifyBase::search(QString query, QString type, QString limit, QString off
                 QStringList commands = {"PLAY", "SONGRADIO"};
 
                 for (int i = 0; i < map_tracks.length(); i++) {
-                    QString id       = map_tracks[i].toMap().value("id").toString();
-                    QString title    = map_tracks[i].toMap().value("name").toString();
+                    QString id = map_tracks[i].toMap().value("id").toString();
+                    QString title = map_tracks[i].toMap().value("name").toString();
                     QString subtitle = map_tracks[i].toMap().value("album").toMap().value("name").toString();
-                    QString image    = "";
+                    QString image = "";
                     if (map_tracks[i].toMap().value("album").toMap().contains("images") &&
                         map_tracks[i].toMap().value("album").toMap().value("images").toList().length() > 0) {
                         QVariantList images = map_tracks[i].toMap().value("album").toMap().value("images").toList();
@@ -242,7 +246,7 @@ void SpotifyBase::search(QString query, QString type, QString limit, QString off
                                 image = images[k].toMap().value("url").toString();
                             }
                         }
-                        if (image == "")
+                        if (image == "") {
                             image = map_tracks[i]
                                         .toMap()
                                         .value("album")
@@ -252,6 +256,7 @@ void SpotifyBase::search(QString query, QString type, QString limit, QString off
                                         .toMap()
                                         .value("url")
                                         .toString();
+                        }
                     }
 
                     SearchModelListItem item = SearchModelListItem(id, "track", title, subtitle, image, commands);
@@ -268,10 +273,10 @@ void SpotifyBase::search(QString query, QString type, QString limit, QString off
                 QStringList commands = {"ARTISTRADIO"};
 
                 for (int i = 0; i < map_artists.length(); i++) {
-                    QString id       = map_artists[i].toMap().value("id").toString();
-                    QString title    = map_artists[i].toMap().value("name").toString();
+                    QString id = map_artists[i].toMap().value("id").toString();
+                    QString title = map_artists[i].toMap().value("name").toString();
                     QString subtitle = "";
-                    QString image    = "";
+                    QString image = "";
                     if (map_artists[i].toMap().contains("images") &&
                         map_artists[i].toMap().value("images").toList().length() > 0) {
                         QVariantList images = map_artists[i].toMap().value("images").toList();
@@ -280,8 +285,9 @@ void SpotifyBase::search(QString query, QString type, QString limit, QString off
                                 image = images[k].toMap().value("url").toString();
                             }
                         }
-                        if (image == "")
+                        if (image == "") {
                             image = map_artists[i].toMap().value("images").toList()[0].toMap().value("url").toString();
+                        }
                     }
 
                     SearchModelListItem item = SearchModelListItem(id, "artist", title, subtitle, image, commands);
@@ -298,10 +304,10 @@ void SpotifyBase::search(QString query, QString type, QString limit, QString off
                 QStringList commands = {"PLAY", "PLAYLISTRADIO"};
 
                 for (int i = 0; i < map_playlists.length(); i++) {
-                    QString id       = map_playlists[i].toMap().value("id").toString();
-                    QString title    = map_playlists[i].toMap().value("name").toString();
+                    QString id = map_playlists[i].toMap().value("id").toString();
+                    QString title = map_playlists[i].toMap().value("name").toString();
                     QString subtitle = map_playlists[i].toMap().value("owner").toMap().value("display_name").toString();
-                    QString image    = "";
+                    QString image = "";
                     if (map_playlists[i].toMap().contains("images") &&
                         map_playlists[i].toMap().value("images").toList().length() > 0) {
                         QVariantList images = map_playlists[i].toMap().value("images").toList();
@@ -310,9 +316,10 @@ void SpotifyBase::search(QString query, QString type, QString limit, QString off
                                 image = images[k].toMap().value("url").toString();
                             }
                         }
-                        if (image == "")
+                        if (image == "") {
                             image =
                                 map_playlists[i].toMap().value("images").toList()[0].toMap().value("url").toString();
+                        }
                     }
 
                     SearchModelListItem item = SearchModelListItem(id, "playlist", title, subtitle, image, commands);
@@ -320,9 +327,9 @@ void SpotifyBase::search(QString query, QString type, QString limit, QString off
                 }
             }
 
-            SearchModelItem* ialbums    = new SearchModelItem("albums", albums);
-            SearchModelItem* itracks    = new SearchModelItem("tracks", tracks);
-            SearchModelItem* iartists   = new SearchModelItem("artists", artists);
+            SearchModelItem* ialbums = new SearchModelItem("albums", albums);
+            SearchModelItem* itracks = new SearchModelItem("tracks", tracks);
+            SearchModelItem* iartists = new SearchModelItem("artists", artists);
             SearchModelItem* iplaylists = new SearchModelItem("playlists", playlists);
 
             SearchModel* m_model = new SearchModel();
@@ -353,11 +360,11 @@ void SpotifyBase::getAlbum(QString id) {
     QObject::connect(this, &SpotifyBase::requestReady, context, [=](const QVariantMap& map, const QString& rUrl) {
         if (rUrl == url) {
             qCDebug(m_log) << "GET ALBUM";
-            QString id       = map.value("id").toString();
-            QString title    = map.value("name").toString();
+            QString id = map.value("id").toString();
+            QString title = map.value("name").toString();
             QString subtitle = map.value("artists").toList()[0].toMap().value("name").toString();
-            QString type     = "album";
-            QString image    = "";
+            QString type = "album";
+            QString image = "";
             if (map.contains("images") && map.value("images").toList().length() > 0) {
                 QVariantList images = map.value("images").toList();
                 for (int k = 0; k < images.length(); k++) {
@@ -365,8 +372,9 @@ void SpotifyBase::getAlbum(QString id) {
                         image = images[k].toMap().value("url").toString();
                     }
                 }
-                if (image == "")
+                if (image == "") {
                     image = map.value("images").toList()[0].toMap().value("url").toString();
+                }
             }
 
             QStringList commands = {"PLAY", "SONGRADIO"};
@@ -401,11 +409,11 @@ void SpotifyBase::getPlaylist(QString id) {
     QObject::connect(this, &SpotifyBase::requestReady, context, [=](const QVariantMap& map, const QString& rUrl) {
         if (rUrl == url) {
             qCDebug(m_log) << "GET PLAYLIST";
-            QString id       = map.value("id").toString();
-            QString title    = map.value("name").toString();
+            QString id = map.value("id").toString();
+            QString title = map.value("name").toString();
             QString subtitle = map.value("owner").toMap().value("display_name").toString();
-            QString type     = "playlist";
-            QString image    = "";
+            QString type = "playlist";
+            QString image = "";
             if (map.contains("images") && map.value("images").toList().length() > 0) {
                 QVariantList images = map.value("images").toList();
                 for (int k = 0; k < images.length(); k++) {
@@ -413,8 +421,9 @@ void SpotifyBase::getPlaylist(QString id) {
                         image = images[k].toMap().value("url").toString();
                     }
                 }
-                if (image == "")
+                if (image == "") {
                     image = map.value("images").toList()[0].toMap().value("url").toString();
+                }
             }
 
             QStringList commands = {"PLAY", "SONGRADIO"};
@@ -458,11 +467,11 @@ void SpotifyBase::getUserPlaylists() {
     QObject::connect(this, &SpotifyBase::requestReady, context, [=](const QVariantMap& map, const QString& rUrl) {
         if (rUrl == url) {
             qCDebug(m_log) << "GET USERS PLAYLIST";
-            QString     id       = "";
-            QString     title    = "";
+            QString     id = "";
+            QString     title = "";
             QString     subtitle = "";
-            QString     type     = "playlist";
-            QString     image    = "";
+            QString     type = "playlist";
+            QString     image = "";
             QStringList commands = {};
 
             BrowseModel* album = new BrowseModel(nullptr, id, title, subtitle, type, image, commands);
@@ -473,15 +482,16 @@ void SpotifyBase::getUserPlaylists() {
             for (int i = 0; i < playlists.length(); i++) {
                 if (playlists[i].toMap().contains("images") &&
                     playlists[i].toMap().value("images").toList().length() > 0) {
-                    image               = "";
+                    image = "";
                     QVariantList images = playlists[i].toMap().value("images").toList();
                     for (int k = 0; k < images.length(); k++) {
                         if (images[k].toMap().value("width").toInt() == 300) {
                             image = images[k].toMap().value("url").toString();
                         }
                     }
-                    if (image == "")
+                    if (image == "") {
                         image = playlists[i].toMap().value("images").toList()[0].toMap().value("url").toString();
+                    }
                 }
 
                 QStringList commands = {"PLAY", "PLAYLISTRADIO"};
@@ -549,10 +559,11 @@ void SpotifyBase::getCurrentPlayer() {
                     }
 
                     // update progress
-                    entity->updateAttrByIndex(MediaPlayerDef::MEDIADURATION,
-                                              int(map.value("item").toMap().value("duration_ms").toInt() / 1000));
+                    entity->updateAttrByIndex(
+                        MediaPlayerDef::MEDIADURATION,
+                        static_cast<int>(map.value("item").toMap().value("duration_ms").toInt() / 1000));
                     entity->updateAttrByIndex(MediaPlayerDef::MEDIAPROGRESS,
-                                              int(map.value("progress_ms").toInt() / 1000));
+                                              static_cast<int>(map.value("progress_ms").toInt() / 1000));
 
                 } else {
                     entity->updateAttrByIndex(MediaPlayerDef::MEDIAIMAGE, "");
@@ -573,15 +584,15 @@ void SpotifyBase::getCurrentPlayer() {
 
 void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, int command, const QVariant& param) {
     if (type == "media_player" && entity_id == m_entity_id) {
-        if (command == MediaPlayerDef::C_PLAY)
+        if (command == MediaPlayerDef::C_PLAY) {
             putRequest("/v1/me/player/play", "");  // normal play without browsing
-        else if (command == MediaPlayerDef::C_PLAY_ITEM) {
-            if (param == "")
+        } else if (command == MediaPlayerDef::C_PLAY_ITEM) {
+            if (param == "") {
                 putRequest("/v1/me/player/play", "");
-            else {
+            } else {
                 if (param.toMap().contains("type")) {
                     if (param.toMap().value("type").toString() == "track") {
-                        QString  url     = "/v1/tracks/";
+                        QString  url = "/v1/tracks/";
                         QObject* context = new QObject(this);
                         QObject::connect(this, &SpotifyBase::requestReady, context,
                                          [=](const QVariantMap& map, const QString& rUrl) {
@@ -591,7 +602,7 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, int
                                                  QStringList rList;
                                                  rList.append(map.value("uri").toString());
                                                  rMap.insert("uris", rList);
-                                                 QJsonDocument doc     = QJsonDocument::fromVariant(rMap);
+                                                 QJsonDocument doc = QJsonDocument::fromVariant(rMap);
                                                  QString       message = doc.toJson(QJsonDocument::JsonFormat::Compact);
                                                  qCDebug(m_log) << message;
                                                  putRequest("/v1/me/player/play", message);
@@ -600,7 +611,7 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, int
                                          });
                         getRequest(url, param.toMap().value("id").toString());
                     } else if (param.toMap().value("type").toString() == "album") {
-                        QString  url     = "/v1/albums/";
+                        QString  url = "/v1/albums/";
                         QObject* context = new QObject(this);
                         QObject::connect(this, &SpotifyBase::requestReady, context,
                                          [=](const QVariantMap& map, const QString& rUrl) {
@@ -609,7 +620,7 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, int
                                                  qCDebug(m_log) << "PLAY MEDIA" << map.value("uri").toString();
                                                  QVariantMap rMap;
                                                  rMap.insert("context_uri", map.value("uri").toString());
-                                                 QJsonDocument doc     = QJsonDocument::fromVariant(rMap);
+                                                 QJsonDocument doc = QJsonDocument::fromVariant(rMap);
                                                  QString       message = doc.toJson(QJsonDocument::JsonFormat::Compact);
                                                  qCDebug(m_log) << message;
                                                  putRequest("/v1/me/player/play", message);
@@ -618,7 +629,7 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, int
                                          });
                         getRequest(url, param.toMap().value("id").toString());
                     } else if (param.toMap().value("type").toString() == "artist") {
-                        QString  url     = "/v1/artists/";
+                        QString  url = "/v1/artists/";
                         QObject* context = new QObject(this);
                         QObject::connect(this, &SpotifyBase::requestReady, context,
                                          [=](const QVariantMap& map, const QString& rUrl) {
@@ -627,7 +638,7 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, int
                                                  qCDebug(m_log) << "PLAY MEDIA" << map.value("uri").toString();
                                                  QVariantMap rMap;
                                                  rMap.insert("context_uri", map.value("uri").toString());
-                                                 QJsonDocument doc     = QJsonDocument::fromVariant(rMap);
+                                                 QJsonDocument doc = QJsonDocument::fromVariant(rMap);
                                                  QString       message = doc.toJson(QJsonDocument::JsonFormat::Compact);
                                                  qCDebug(m_log) << message;
                                                  putRequest("/v1/me/player/play", message);
@@ -636,7 +647,7 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, int
                                          });
                         getRequest(url, param.toMap().value("id").toString());
                     } else if (param.toMap().value("type").toString() == "playlist") {
-                        QString  url     = "/v1/playlists/";
+                        QString  url = "/v1/playlists/";
                         QObject* context = new QObject(this);
                         QObject::connect(this, &SpotifyBase::requestReady, context,
                                          [=](const QVariantMap& map, const QString& rUrl) {
@@ -645,7 +656,7 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, int
                                                  qCDebug(m_log) << "PLAY MEDIA" << map.value("uri").toString();
                                                  QVariantMap rMap;
                                                  rMap.insert("context_uri", map.value("uri").toString());
-                                                 QJsonDocument doc     = QJsonDocument::fromVariant(rMap);
+                                                 QJsonDocument doc = QJsonDocument::fromVariant(rMap);
                                                  QString       message = doc.toJson(QJsonDocument::JsonFormat::Compact);
                                                  qCDebug(m_log) << message;
                                                  putRequest("/v1/me/player/play", message);
@@ -656,13 +667,13 @@ void SpotifyBase::sendCommand(const QString& type, const QString& entity_id, int
                     }
                 }
             }
-        } else if (command == MediaPlayerDef::C_PAUSE)
+        } else if (command == MediaPlayerDef::C_PAUSE) {
             putRequest("/v1/me/player/pause", "");
-        else if (command == MediaPlayerDef::C_NEXT)
+        } else if (command == MediaPlayerDef::C_NEXT) {
             postRequest("/v1/me/player/next", "");
-        else if (command == MediaPlayerDef::C_PREVIOUS)
+        } else if (command == MediaPlayerDef::C_PREVIOUS) {
             postRequest("/v1/me/player/previous", "");
-        else if (command == MediaPlayerDef::C_VOLUME_SET) {
+        } else if (command == MediaPlayerDef::C_VOLUME_SET) {
             putRequest("/v1/me/player/volume", "?=volume_percent=" + param.toString());
         } else if (command == MediaPlayerDef::C_SEARCH) {
             search(param.toString());
