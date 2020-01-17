@@ -32,8 +32,8 @@
 
 IntegrationInterface::~IntegrationInterface() {}
 
-void SpotifyPlugin::create(const QVariantMap& config, QObject* entities, QObject* notifications, QObject* api,
-                           QObject* configObj) {
+void SpotifyPlugin::create(const QVariantMap& config, EntitiesInterface* entities,
+                           NotificationsInterface* notifications, YioAPIInterface* api, ConfigInterface* configObj) {
     QMap<QObject*, QVariant> returnData;
 
     QVariantList data;
@@ -68,8 +68,8 @@ SpotifyBase::SpotifyBase(QLoggingCategory& log, QObject* parent) : m_log(log) {
     QObject::connect(m_polling_timer, &QTimer::timeout, this, &SpotifyBase::onPollingTimerTimeout);
 }
 
-void SpotifyBase::setup(const QVariantMap& config, QObject* entities, QObject* notifications, QObject* api,
-                        QObject* configObj) {
+void SpotifyBase::setup(const QVariantMap& config, EntitiesInterface* entities, NotificationsInterface* notifications,
+                        YioAPIInterface* api, ConfigInterface* configObj) {
     Integration::setup(config, entities);  // sets id and friendly_name
 
     for (QVariantMap::const_iterator iter = config.begin(); iter != config.end(); ++iter) {
@@ -82,9 +82,9 @@ void SpotifyBase::setup(const QVariantMap& config, QObject* entities, QObject* n
             m_entity_id = map.value("entity_id").toString();
         }
     }
-    m_notifications = qobject_cast<NotificationsInterface*>(notifications);
-    m_api = qobject_cast<YioAPIInterface*>(api);
-    m_config = qobject_cast<ConfigInterface*>(configObj);
+    m_notifications = notifications;
+    m_api = api;
+    m_config = configObj;
 }
 
 void SpotifyBase::connect() {

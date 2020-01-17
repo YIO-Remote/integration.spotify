@@ -51,8 +51,8 @@ class SpotifyPlugin : public PluginInterface {
 
  public:
     SpotifyPlugin() : m_log("spotify") {}
-    void create(const QVariantMap& config, QObject* entities, QObject* notifications, QObject* api,
-                QObject* configObj) override;
+    void create(const QVariantMap& config, EntitiesInterface* entities, NotificationsInterface* notifications,
+                YioAPIInterface* api, ConfigInterface* configObj) override;
     void setLogEnabled(QtMsgType msgType, bool enable) override { m_log.setEnabled(msgType, enable); }
 
  private:
@@ -69,8 +69,8 @@ class SpotifyBase : public Integration {
  public:
     explicit SpotifyBase(QLoggingCategory& log, QObject* parent);  // NOLINT we need a non-const reference
 
-    Q_INVOKABLE void setup(const QVariantMap& config, QObject* entities, QObject* notifications, QObject* api,
-                           QObject* configObj);
+    Q_INVOKABLE void setup(const QVariantMap& config, EntitiesInterface* entities,
+                           NotificationsInterface* notifications, YioAPIInterface* api, ConfigInterface* configObj);
     void             connect();
     void             disconnect();
     void             enterStandby();
