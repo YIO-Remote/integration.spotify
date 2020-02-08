@@ -22,21 +22,11 @@
 
 #pragma once
 
-#include <QLoggingCategory>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
-#include <QObject>
-#include <QString>
 #include <QTimer>
-#include <QVariant>
-#include <QtConcurrent/QtConcurrentRun>
 
-#include "yio-interface/configinterface.h"
-#include "yio-interface/entities/entitiesinterface.h"
-#include "yio-interface/entities/entityinterface.h"
-#include "yio-interface/notificationsinterface.h"
-#include "yio-interface/plugininterface.h"
-#include "yio-interface/yioapiinterface.h"
+#include "yio-interface/entities/mediaplayerinterface.h"
 #include "yio-model/mediaplayer/albummodel_mediaplayer.h"
 #include "yio-model/mediaplayer/searchmodel_mediaplayer.h"
 #include "yio-plugin/integration.h"
@@ -72,7 +62,7 @@ class Spotify : public Integration {
 
  public:
     explicit Spotify(const QVariantMap& config, EntitiesInterface* entities, NotificationsInterface* notifications,
-                         YioAPIInterface* api, ConfigInterface* configObj, Plugin* plugin);
+                     YioAPIInterface* api, ConfigInterface* configObj, Plugin* plugin);
 
     Q_INVOKABLE void connect() override;
     Q_INVOKABLE void disconnect() override;
@@ -83,11 +73,6 @@ class Spotify : public Integration {
 
  signals:
     void requestReady(const QVariantMap& obj, const QString& url);
-
-    // TODO(marton) are these slots going to be used for anything or can they be removed?
- public slots:           // NOLINT open issue: https://github.com/cpplint/cpplint/pull/99
-    void onStandByOn();  // can be removed when enterLeaveStandby is called
-    void onStandByOff();
 
  private:
     // Spotify API calls
