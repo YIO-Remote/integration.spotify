@@ -94,7 +94,13 @@ class Spotify : public Integration {
     // get and post requests
     void getRequest(const QString& url, const QString& params);
     void postRequest(const QString& url, const QString& params);
-    void putRequest(const QString& url, const QString& params);
+    void putRequest(const QString& url, const QString& params);  // TODO(marton): change param to QUrlQuery
+    // QUrlQuery query;
+
+    //    query.addQueryItem("username", "test");
+    //    query.addQueryItem("password", "test");
+
+    //    url.setQuery(query.query());
 
  private slots:  // NOLINT open issue: https://github.com/cpplint/cpplint/pull/99
     void onTokenTimeOut();

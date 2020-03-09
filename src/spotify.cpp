@@ -647,7 +647,7 @@ void Spotify::sendCommand(const QString& type, const QString& entity_id, int com
     } else if (command == MediaPlayerDef::C_PREVIOUS) {
         postRequest("/v1/me/player/previous", "");
     } else if (command == MediaPlayerDef::C_VOLUME_SET) {
-        putRequest("/v1/me/player/volume", "?=volume_percent=" + param.toString());
+        putRequest("/v1/me/player/volume?volume_percent=" + param.toString(), "");
     } else if (command == MediaPlayerDef::C_SEARCH) {
         search(param.toString());
     } else if (command == MediaPlayerDef::C_GETALBUM) {
