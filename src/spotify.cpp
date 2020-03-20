@@ -31,6 +31,8 @@ SpotifyPlugin::SpotifyPlugin() : Plugin("spotify", USE_WORKER_THREAD) {}
 Integration* SpotifyPlugin::createIntegration(const QVariantMap& config, EntitiesInterface* entities,
                                               NotificationsInterface* notifications, YioAPIInterface* api,
                                               ConfigInterface* configObj) {
+    qCInfo(m_logCategory) << "Creating Spotify integration plugin" << PLUGIN_VERSION;
+
     return new Spotify(config, entities, notifications, api, configObj, this);
 }
 

@@ -1,3 +1,7 @@
+# Plugin VERSION
+SPOTIFY_VERSION = $$system(git describe --match "v[0-9]*" --tags HEAD --always)
+DEFINES += PLUGIN_VERSION=\\\"$$SPOTIFY_VERSION\\\"
+
 TEMPLATE  = lib
 CONFIG   += plugin
 QT       += core quick network
@@ -23,6 +27,9 @@ isEmpty(INTG_LIB_PATH) {
     error( "Cannot find the yio-model-mediaplayer.pri file!" )
 }
 
+QMAKE_SUBSTITUTES += spotify.json.in
+# output path must be included for the output file from QMAKE_SUBSTITUTES
+INCLUDEPATH += $$OUT_PWD
 HEADERS  += src/spotify.h
 SOURCES  += src/spotify.cpp
 TARGET    = spotify
