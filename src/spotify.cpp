@@ -786,7 +786,7 @@ void Spotify::putRequest(const QString& url, const QString& params) {
     QObject::connect(manager, &QNetworkAccessManager::finished, context, [=](QNetworkReply* reply) {
         int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
         if (statusCode != 204) {
-            qCWarning(m_logCategory) << "ERROR WITH PUT REQUEST " << statusCode;
+            qCWarning(m_logCategory) << "ERROR WITH PUT REQUEST " << statusCode << reply->readAll();
         }
         reply->deleteLater();
         context->deleteLater();
