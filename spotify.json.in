@@ -32,5 +32,11 @@
   \"dependencies\" : [
       { \"name\" : \"app\", \"version\" : \"0.2.0\" },
       { \"name\" : \"remoteOs\", \"version\" : \"0.2.0\" }
-  ]
+  ],
+  \"setup_data\": {
+    \"access_token\": \"\",
+    \"client_id\": \"\",
+    \"client_secret\": \"\",
+    \"entity_id\": \"\"
+  }
 }
