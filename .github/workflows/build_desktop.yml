@@ -4,13 +4,11 @@
 # Enhanced by Markus Zehnder
 #
 # TODO:
-# - debug / release build: either both or a switch which one to create
-# - Version tag / branch for integrations.library
 # - Create a re-usable GitHub Action
 
-name: QMake Build Matrix
+name: Build Desktop Libraries
 
-on: [push]
+on: [push, pull_request]
 
 env:
   # Attention: Qt version and Qt Creator version should correspond (check releases).
@@ -35,31 +33,46 @@ jobs:
       matrix:
         config:
         - {
-            name: "Linux Latest x64", artifact: "Linux-x64",
+            name: "Linux Latest x64", artifact: "Linux-x64", build: "release",
+            qmake-args: "CONFIG+=release",
             os: ubuntu-latest
           }
         - {
-            name: "macOS Latest x64", artifact: "macOS-x64",
+            name: "macOS Latest x64", artifact: "macOS-x64", build: "release",
+            qmake-args: "CONFIG+=release",
             os: macos-latest
           }
         - {
-            name: "Windows Latest x64", artifact: "Windows-x64",
+            name: "Windows Latest x64", artifact: "Windows-x64", build: "release",
+            qmake-args: "CONFIG+=release",
             os: windows-latest,
             environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
           }
 
     steps:
-    - name: Checkout integration plugin
+    - name: Checkout ${{ env.PROJECT_NAME }}
       uses: actions/checkout@v2
       with:
-        path: ${{ env.PROJECT_NAME}}
+        # history required to determine number of commits since last release tag
+        fetch-depth: 0
+        path: ${{ env.PROJECT_NAME }}
+    - name: Fetch all tags to determine version
+      run: |
+        cd ${{ env.PROJECT_NAME }}
+        git fetch origin +refs/tags/*:refs/tags/*
+
+    - name: Determine integrations.library version
+      shell: bash
+      run: |
+        YIO_INTG_LIB_VERSION=$(cat "${GITHUB_WORKSPACE}/${{ env.PROJECT_NAME }}/dependencies.cfg" | awk '/^integrations.library:/{print $2}')
+        echo "Required integrations.library: $YIO_INTG_LIB_VERSION"
+        echo "::set-env name=YIO_INTG_LIB_VERSION::$YIO_INTG_LIB_VERSION"
 
     - name: Checkout integrations.library
       uses: actions/checkout@v2
       with:
         repository: YIO-Remote/integrations.library
-        # FIXME check for master branch build!
-        ref: develop
+        ref: ${{ env.YIO_INTG_LIB_VERSION }}
         path: integrations.library
 
     - name: Install system libs
@@ -315,7 +328,7 @@ jobs:
         execute_process(
           COMMAND ${{ steps.qt.outputs.qt_dir }}/bin/qmake
             $ENV{APP_PRO}
-            CONFIG+=release
+            ${{ matrix.config.qmake-args }}
             QTC_SOURCE="${qtcreator_dir}"
             QTC_BUILD="${qtcreator_dir}"
           WORKING_DIRECTORY $ENV{GITHUB_WORKSPACE}/$ENV{PROJECT_NAME}
@@ -352,95 +365,21 @@ jobs:
         endif()
 
         execute_process(
-          COMMAND cp $ENV{GITHUB_WORKSPACE}/$ENV{PROJECT_NAME}/dock.json $ENV{YIO_BIN}
+          COMMAND cp $ENV{GITHUB_WORKSPACE}/$ENV{PROJECT_NAME}/spotify.json $ENV{YIO_BIN}
         )
         execute_process(
           COMMAND cp $ENV{GITHUB_WORKSPACE}/$ENV{PROJECT_NAME}/version.txt $ENV{YIO_BIN}
         )
 
+    - name: Set build artifact name
+      shell: bash
+      run: |
+        APP_VERSION=$(cat ${{ env.YIO_BIN }}/version.txt | awk '{print $1}')
+        echo "App version: $APP_VERSION"
+        echo "::set-env name=ARTIFACT_NAME::${{ env.APP_NAME }}-$APP_VERSION-Qt${{ env.QT_VERSION }}-${{ matrix.config.artifact }}-${{ matrix.config.build }}"
+
     - uses: actions/upload-artifact@v1
       id: upload_artifact
       with:
-        path: ${{ env.YIO_BIN}}
-        name: ${{ env.APP_NAME}}-Qt${{ env.QT_VERSION }}-release-${{ matrix.config.artifact }}
-
-  release:
-    if: contains(github.ref, 'tags/v')
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1.0.0
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
-        prerelease: false
-
-    - name: Store Release url
-      run: |
-        echo "${{ steps.create_release.outputs.upload_url }}" > ./upload_url
-
-    - uses: actions/upload-artifact@v1
-      with:
-        path: ./upload_url
-        name: upload_url
-
-  publish:
-    if: contains(github.ref, 'tags/v')
-
-    name: ${{ matrix.config.name }}
-    runs-on: ${{ matrix.config.os }}
-    strategy:
-      matrix:
-        config:
-        - {
-            name: "Windows Latest x64", artifact: "Windows-x64",
-            os: ubuntu-latest
-          }
-        - {
-            name: "Linux Latest x64", artifact: "Linux-x64",
-            os: ubuntu-latest
-          }
-        - {
-            name: "macOS Latest x64", artifact: "macOS-x64",
-            os: ubuntu-latest
-          }
-    needs: release
-
-    steps:
-    - name: Download artifact
-      uses: actions/download-artifact@v1
-      with:
-        name: ${{ env.APP_NAME }}-Qt${{ env.QT_VERSION }}-release-${{ matrix.config.artifact }}
-        path: ./
-
-    - run: ls -la
-
-    - run: zip -r ${APP_NAME}-Qt${{ env.QT_VERSION }}-release-${{ matrix.config.artifact }}.zip .
-    - run: ls -la
-
-    - name: Download URL
-      uses: actions/download-artifact@v1
-      with:
-        name: upload_url
-        path: ./
-    - id: set_upload_url
-      run: |
-        upload_url=`cat ./upload_url`
-        echo ::set-output name=upload_url::$upload_url
-
-    - name: Upload to Release
-      id: upload_to_release
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.set_upload_url.outputs.upload_url }}
-        asset_path: ./${{ env.APP_NAME }}-Qt${{ env.QT_VERSION }}-release-${{ matrix.config.artifact }}.zip
-        asset_name: ${{ env.APP_NAME }}-Qt${{ env.QT_VERSION }}-release-${{ matrix.config.artifact }}.zip
-        asset_content_type: application/zip
+        path: ${{ env.YIO_BIN }}
+        name: ${{ env.ARTIFACT_NAME }}
