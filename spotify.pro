@@ -43,6 +43,17 @@ isEmpty(INTG_LIB_PATH) {
     error( "Cannot find the yio-model-mediaplayer.pri file!" )
 }
 
+# verify integrations.library version
+unix {
+    INTG_LIB_VERSION = $$system(cat $$PWD/dependencies.cfg | awk '/^integrations.library:/$$system_quote("{print $2}")')
+    INTG_GIT_VERSION = "$$system(cd $$INTG_LIB_PATH && git describe --match "v[0-9]*" --tags HEAD --always)"
+    message("Required integrations.library version: $$INTG_LIB_VERSION Local version: $$INTG_GIT_VERSION")
+    # this is a simple check but qmake only provides limited tests and 'versionAtLeast' doesn't work with 'v' prefix.
+    !contains(INTG_GIT_VERSION, $$re_escape($${INTG_LIB_VERSION}).*) {
+        error("Invalid integrations.library version: \"$$INTG_GIT_VERSION\". Please check out required version \"$$INTG_LIB_VERSION\"")
+    }
+}
+
 QMAKE_SUBSTITUTES += spotify.json.in version.txt.in
 # output path must be included for the output file from QMAKE_SUBSTITUTES
 INCLUDEPATH += $$OUT_PWD
@@ -57,13 +68,8 @@ MOC_DIR = $$PWD/build/$$DESTINATION_PATH/moc
 RCC_DIR = $$PWD/build/$$DESTINATION_PATH/qrc
 UI_DIR = $$PWD/build/$$DESTINATION_PATH/ui
 
-# install
-unix {
-    target.path = /usr/lib
-    INSTALLS += target
-}
-
 DISTFILES += \
+    dependencies.cfg \
     spotify.json.in \
     version.txt.in \
     README.md
