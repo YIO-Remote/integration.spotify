@@ -34,9 +34,69 @@
       { \"name\" : \"remoteOS\", \"version\" : \"0.2.0\" }
   ],
   \"setup_data\": {
-    \"access_token\": \"\",
-    \"client_id\": \"\",
-    \"client_secret\": \"\",
-    \"entity_id\": \"\"
+    \"$schema\": \"http://json-schema.org\",
+    \"$id\": \"http://yio-remote.com/spotify.json\",
+    \"type\": \"object\",
+    \"title\": \"YIO Integration Spotify Schema\",
+    \"description\": \"Required data points to set up a Spotifyintegrations.\",
+    \"default\": {},
+    \"additionalProperties\": true,
+    \"examples\": [
+        {
+            \"access_token\": \"\",
+            \"client_id\": \"\",
+            \"client_secret\": \"\",
+            \"entity_id\" :\"\"
+        }
+    ],
+    \"required\": [
+        \"access_token\",
+        \"client_id\",
+        \"client_secret\",
+        \"entity_id\"
+    ],
+    \"properties\": {
+        \"access_token\": {
+            \"$id\": \"#/properties/access_token\",
+            \"type\": \"string\",
+            \"title\": \"The access_token schema\",
+            \"description\": \"Not user input. Access token generated after authenticating to Spotify.\",
+            \"default\": \"\",
+            \"examples\": [
+                \"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiVlx1MDAxNcKbwoNUwoonbFPCu8KhwrYiLCJpYXQiOjE0NDQyNjI1NDMsImV4cCI6MTQ0NDI2MjU2M30.MldruS1PvZaRZIJR4legQaauQ3_DYKxxP2rFnD37Ip4\"
+            ]
+        },
+        \"client_id\": {
+            \"$id\": \"#/properties/client_id\",
+            \"type\": \"string\",
+            \"title\": \"The client_id schema\",
+            \"description\": \"Client ID from the Spotify Developer page.\",
+            \"default\": \"\",
+            \"examples\": [
+                \"JKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiVlx1MDAxNcKbwoNUwoonbFPCu8KhwrYiLCJpYXQiO\"
+            ]
+        },
+        \"client_secret\": {
+            \"$id\": \"#/properties/client_secret\",
+            \"type\": \"string\",
+            \"title\": \"The client_secret schema\",
+            \"description\": \"Client secret from the Spotify Developer page.\",
+            \"default\": \"\",
+            \"examples\": [
+                \"JKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiVlx1MDAxNcKbwoNUwoonbFPCu8KhwrYiLCJpYXQiO\"
+            ]
+        },
+        \"entity_id\": {
+            \"$id\": \"#/properties/entity_id\",
+            \"type\": \"string\",
+            \"title\": \"The entity_id schema\",
+            \"description\": \"Not user input. A unique entity id.\",
+            \"default\": \"\",
+            \"examples\": [
+                \"spotify.spotify\",
+                \"6550f44c-7f11-11ea-bc55-0242ac130003\"
+            ]
+        }
+    }
   }
 }
