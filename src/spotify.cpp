@@ -64,13 +64,8 @@ void Spotify::connect() {
     // start polling
     m_pollingTimer->start();
 
-    // if it's the first startup, add available entity
+    // if it's the first startup, connect signals
     if (m_startup) {
-        EntityInterface* entity = static_cast<EntityInterface*>(m_entities->getEntityInterface(m_entityId));
-        if (entity) {
-            addAvailableEntity(m_entityId, entity->type(), integrationId(), entity->friendly_name(),
-                               entity->supported_features());
-        }
         m_startup = false;
     }
 
