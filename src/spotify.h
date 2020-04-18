@@ -68,7 +68,7 @@ class Spotify : public Integration {
     Q_INVOKABLE void disconnect() override;
     Q_INVOKABLE void enterStandby() override;
     Q_INVOKABLE void leaveStandby() override;
-    Q_INVOKABLE void sendCommand(const QString& type, const QString& entity_id, int command,
+    Q_INVOKABLE void sendCommand(const QString& type, const QString& entitId, int command,
                                  const QVariant& param) override;
 
  signals:
@@ -95,7 +95,7 @@ class Spotify : public Integration {
     void getRequest(const QString& url, const QString& params);
     void postRequest(const QString& url, const QString& params);
     void putRequest(const QString& url, const QString& params);  // TODO(marton): change param to QUrlQuery
-    // QUrlQuery query;
+                                                                 // QUrlQuery query;
 
     //    query.addQueryItem("username", "test");
     //    query.addQueryItem("password", "test");

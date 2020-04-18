@@ -560,7 +560,7 @@ void Spotify::getCurrentPlayer() {
     getRequest(url, "");
 }
 
-void Spotify::sendCommand(const QString& type, const QString& entity_id, int command, const QVariant& param) {
+void Spotify::sendCommand(const QString& type, const QString& entityId, int command, const QVariant& param) {
     if (!(type == "media_player" && entity_id == m_entityId)) {
         return;
     }
