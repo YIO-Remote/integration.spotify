@@ -73,3 +73,6 @@ DISTFILES += \
     spotify.json.in \
     version.txt.in \
     README.md
+
+# Add setup schema to metadata
+CFG_SCHEMA = "$$cat($$PWD/spotify_schema.json)"
