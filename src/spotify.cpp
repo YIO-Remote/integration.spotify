@@ -64,9 +64,15 @@ void Spotify::connect() {
     // start polling
     m_pollingTimer->start();
 
-    // if it's the first startup, connect signals
+    // if it's the first startup, add the entity to available entities
     if (m_startup) {
         m_startup = false;
+
+        EntityInterface* entity = static_cast<EntityInterface*>(m_entities->getEntityInterface(m_entityId));
+        if (entity) {
+            addAvailableEntity(m_entityId, entity->type(), integrationId(), entity->friendly_name(),
+                               entity->supported_features());
+        }
     }
 
     qCDebug(m_logCategory) << "STARTING SPOTIFY";
@@ -554,8 +560,8 @@ void Spotify::getCurrentPlayer() {
     getRequest(url, "");
 }
 
-void Spotify::sendCommand(const QString& type, const QString& entity_id, int command, const QVariant& param) {
-    if (!(type == "media_player" && entity_id == m_entityId)) {
+void Spotify::sendCommand(const QString& type, const QString& entityId, int command, const QVariant& param) {
+    if (!(type == "media_player" && entityId == m_entityId)) {
         return;
     }
 

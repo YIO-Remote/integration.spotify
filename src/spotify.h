@@ -64,12 +64,13 @@ class Spotify : public Integration {
     explicit Spotify(const QVariantMap& config, EntitiesInterface* entities, NotificationsInterface* notifications,
                      YioAPIInterface* api, ConfigInterface* configObj, Plugin* plugin);
 
-    Q_INVOKABLE void connect() override;
-    Q_INVOKABLE void disconnect() override;
-    Q_INVOKABLE void enterStandby() override;
-    Q_INVOKABLE void leaveStandby() override;
-    Q_INVOKABLE void sendCommand(const QString& type, const QString& entity_id, int command,
-                                 const QVariant& param) override;
+    void sendCommand(const QString& type, const QString& entitId, int command, const QVariant& param) override;
+
+ public slots:  // NOLINT open issue: https://github.com/cpplint/cpplint/pull/99
+    void connect() override;
+    void disconnect() override;
+    void enterStandby() override;
+    void leaveStandby() override;
 
  signals:
     void requestReady(const QVariantMap& obj, const QString& url);
@@ -95,7 +96,7 @@ class Spotify : public Integration {
     void getRequest(const QString& url, const QString& params);
     void postRequest(const QString& url, const QString& params);
     void putRequest(const QString& url, const QString& params);  // TODO(marton): change param to QUrlQuery
-    // QUrlQuery query;
+                                                                 // QUrlQuery query;
 
     //    query.addQueryItem("username", "test");
     //    query.addQueryItem("password", "test");
