@@ -66,7 +66,7 @@ class Spotify : public Integration {
 
     void sendCommand(const QString& type, const QString& entitId, int command, const QVariant& param) override;
 
- public slots:
+ public slots:  // NOLINT open issue: https://github.com/cpplint/cpplint/pull/99
     void connect() override;
     void disconnect() override;
     void enterStandby() override;
