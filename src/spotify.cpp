@@ -53,6 +53,35 @@ Spotify::Spotify(const QVariantMap& config, EntitiesInterface* entities, Notific
     m_pollingTimer = new QTimer(this);
     m_pollingTimer->setInterval(4000);
     QObject::connect(m_pollingTimer, &QTimer::timeout, this, &Spotify::onPollingTimerTimeout);
+
+    // add available entity
+    QStringList supportedFeatures;
+    supportedFeatures << "SOURCE"
+                      << "APP_NAME"
+                      << "VOLUME"
+                      << "VOLUME_UP"
+                      << "VOLUME_DOWN"
+                      << "VOLUME_SET"
+                      << "MUTE"
+                      << "MUTE_SET"
+                      << "MEDIA_TYPE"
+                      << "MEDIA_TITLE"
+                      << "MEDIA_ARTIST"
+                      << "MEDIA_ALBUM"
+                      << "MEDIA_DURATION"
+                      << "MEDIA_POSITION"
+                      << "MEDIA_IMAGE"
+                      << "PLAY"
+                      << "PAUSE"
+                      << "STOP"
+                      << "PREVIOUS"
+                      << "NEXT"
+                      << "SEEK"
+                      << "SHUFFLE"
+                      << "SEARCH"
+                      << "SPEAKER_CONTROL"
+                      << "LIST";
+    addAvailableEntity(m_entityId, "media_player", integrationId(), friendlyName(), supportedFeatures);
 }
 
 void Spotify::connect() {
@@ -63,17 +92,6 @@ void Spotify::connect() {
 
     // start polling
     m_pollingTimer->start();
-
-    // if it's the first startup, add the entity to available entities
-    if (m_startup) {
-        m_startup = false;
-
-        EntityInterface* entity = static_cast<EntityInterface*>(m_entities->getEntityInterface(m_entityId));
-        if (entity) {
-            addAvailableEntity(m_entityId, entity->type(), integrationId(), entity->friendly_name(),
-                               entity->supported_features());
-        }
-    }
 
     qCDebug(m_logCategory) << "STARTING SPOTIFY";
 }
