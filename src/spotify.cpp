@@ -54,6 +54,10 @@ Spotify::Spotify(const QVariantMap& config, EntitiesInterface* entities, Notific
     m_pollingTimer->setInterval(4000);
     QObject::connect(m_pollingTimer, &QTimer::timeout, this, &Spotify::onPollingTimerTimeout);
 
+    m_progressBarTimer = new QTimer(this);
+    m_progressBarTimer->setInterval(1000);
+    QObject::connect(m_progressBarTimer, &QTimer::timeout, this, &Spotify::onProgressBarTimerTimeout);
+
     // add available entity
     QStringList supportedFeatures;
     supportedFeatures << "SOURCE"
@@ -99,6 +103,7 @@ void Spotify::connect() {
 void Spotify::disconnect() {
     setState(DISCONNECTED);
     m_pollingTimer->stop();
+    m_progressBarTimer->stop();
 }
 
 void Spotify::enterStandby() { disconnect(); }
@@ -550,16 +555,20 @@ void Spotify::getCurrentPlayer() {
                     // get the state
                     if (map.value("is_playing").toBool()) {
                         entity->updateAttrByIndex(MediaPlayerDef::STATE, MediaPlayerDef::PLAYING);
+                        m_progressBarTimer->start();
                     } else {
                         entity->updateAttrByIndex(MediaPlayerDef::STATE, MediaPlayerDef::IDLE);
+                        m_progressBarTimer->stop();
                     }
 
                     // update progress
                     entity->updateAttrByIndex(
                         MediaPlayerDef::MEDIADURATION,
                         static_cast<int>(map.value("item").toMap().value("duration_ms").toInt() / 1000));
-                    entity->updateAttrByIndex(MediaPlayerDef::MEDIAPROGRESS,
-                                              static_cast<int>(map.value("progress_ms").toInt() / 1000));
+                    //                    entity->updateAttrByIndex(MediaPlayerDef::MEDIAPROGRESS,
+                    //                                              static_cast<int>(map.value("progress_ms").toInt() /
+                    //                                              1000));
+                    m_progressBarPosition = map.value("progress_ms").toInt() / 1000;
 
                 } else {
                     entity->updateAttrByIndex(MediaPlayerDef::MEDIAIMAGE, "");
@@ -843,3 +852,11 @@ void Spotify::onTokenTimeOut() {
 }
 
 void Spotify::onPollingTimerTimeout() { getCurrentPlayer(); }
+
+void Spotify::onProgressBarTimerTimeout() {
+    EntityInterface* entity = static_cast<EntityInterface*>(m_entities->getEntityInterface(m_entityId));
+    if (entity) {
+        m_progressBarPosition++;
+        entity->updateAttrByIndex(MediaPlayerDef::MEDIAPROGRESS, m_progressBarPosition);
+    }
+}
