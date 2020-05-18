@@ -106,6 +106,7 @@ class Spotify : public Integration {
  private slots:  // NOLINT open issue: https://github.com/cpplint/cpplint/pull/99
     void onTokenTimeOut();
     void onPollingTimerTimeout();
+    void onProgressBarTimerTimeout();
 
  private:
     bool    m_startup = true;
@@ -113,6 +114,9 @@ class Spotify : public Integration {
 
     // polling timer
     QTimer* m_pollingTimer;
+    QTimer* m_progressBarTimer;
+
+    int m_progressBarPosition = 0;
 
     // Spotify auth stuff
     QString m_clientId;

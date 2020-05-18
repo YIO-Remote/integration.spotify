@@ -6,14 +6,6 @@
     "description": "Required data points to set up a Spotifyintegrations.",
     "default": {},
     "additionalProperties": true,
-    "examples": [
-        {
-            "access_token": "",
-            "client_id": "",
-            "client_secret": "",
-            "entity_id" :""
-        }
-    ],
     "required": [
         "access_token",
         "client_id",
@@ -24,7 +16,7 @@
         "access_token": {
             "$id": "#/properties/access_token",
             "type": "string",
-            "title": "The access_token schema",
+            "title": "Access token",
             "description": "Not user input. Access token generated after authenticating to Spotify.",
             "default": "",
             "examples": [
@@ -34,7 +26,7 @@
         "client_id": {
             "$id": "#/properties/client_id",
             "type": "string",
-            "title": "The client_id schema",
+            "title": "Client ID",
             "description": "Client ID from the Spotify Developer page.",
             "default": "",
             "examples": [
@@ -44,7 +36,7 @@
         "client_secret": {
             "$id": "#/properties/client_secret",
             "type": "string",
-            "title": "The client_secret schema",
+            "title": "Client Secret",
             "description": "Client secret from the Spotify Developer page.",
             "default": "",
             "examples": [
