@@ -724,7 +724,11 @@ void Spotify::getRequest(const QString& url, const QString& params) {
     // connect to finish signal
     QObject::connect(manager, &QNetworkAccessManager::finished, context, [=](QNetworkReply* reply) {
         if (reply->error()) {
-            qCWarning(m_logCategory) << reply->errorString();
+            QString errorString = reply->errorString();
+            qCWarning(m_logCategory) << errorString;
+            if (errorString == "Host requires authentication") {
+                refreshAccessToken();
+            }
         }
 
         QString     answer = reply->readAll();
