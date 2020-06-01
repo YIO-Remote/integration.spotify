@@ -736,7 +736,7 @@ void Spotify::getRequest(const QString& url, const QString& params) {
             QString errorString = reply->errorString();
             qCWarning(m_logCategory) << errorString;
             if (errorString == "Host requires authentication") {
-                //                refreshAccessToken();
+                refreshAccessToken();
             }
         }
 
