@@ -44,9 +44,9 @@ Spotify::Spotify(const QVariantMap& config, EntitiesInterface* entities, Notific
             QVariantMap map = iter.value().toMap();
             m_clientId      = map.value("client_id").toString();
             m_clientSecret  = map.value("client_secret").toString();
-            m_accessToken   = map.value("access_token").toString();
-            m_refreshToken  = map.value("refresh_token").toString();
-            m_entityId      = map.value("entity_id").toString();
+            //            m_accessToken   = map.value("access_token").toString();
+            m_refreshToken = map.value("refresh_token").toString();
+            m_entityId     = map.value("entity_id").toString();
         }
     }
 
@@ -94,9 +94,6 @@ void Spotify::connect() {
     // get a new access token
     refreshAccessToken();
 
-    // start polling
-    m_pollingTimer->start();
-
     qCDebug(m_logCategory) << "STARTING SPOTIFY";
 }
 
@@ -118,7 +115,7 @@ void Spotify::refreshAccessToken() {
 
     QObject::connect(manager, &QNetworkAccessManager::finished, context, [=](QNetworkReply* reply) {
         if (reply->error()) {
-            qCWarning(m_logCategory) << reply->errorString();
+            qCWarning(m_logCategory) << "Refresh token:" << reply->errorString();
             //            qCWarning(m_logCategory) << reply->readAll();
         }
 
@@ -135,6 +132,9 @@ void Spotify::refreshAccessToken() {
 
         // store the refresh and acccess tokens
         if (map.contains("access_token")) {
+            if (m_accessToken != map.value("access_token").toString()) {
+                qCDebug(m_logCategory) << "Got new access token";
+            }
             m_accessToken = map.value("access_token").toString();
         }
 
@@ -154,7 +154,16 @@ void Spotify::refreshAccessToken() {
         QObject::connect(m_tokenTimeOutTimer, &QTimer::timeout, this, &Spotify::onTokenTimeOut);
 
         // get the token 60 seconds before expiry
-        m_tokenTimeOutTimer->start((m_tokenExpire - 60) * 1000);
+        qCDebug(m_logCategory) << "Token expiry time:" << m_tokenExpire;
+        if (m_tokenExpire >= 60) {
+            m_tokenExpire = m_tokenExpire - 60;
+        }
+        if (m_tokenExpire > 0) {
+            m_tokenTimeOutTimer->start(m_tokenExpire * 1000);
+
+            // start polling
+            m_pollingTimer->start();
+        }
 
         reply->deleteLater();
         context->deleteLater();
@@ -727,7 +736,7 @@ void Spotify::getRequest(const QString& url, const QString& params) {
             QString errorString = reply->errorString();
             qCWarning(m_logCategory) << errorString;
             if (errorString == "Host requires authentication") {
-                refreshAccessToken();
+                //                refreshAccessToken();
             }
         }
 

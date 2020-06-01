@@ -123,7 +123,7 @@ class Spotify : public Integration {
     QString m_clientSecret;
     QString m_accessToken;
     QString m_refreshToken;
-    int     m_tokenExpire;  // in seconds
+    int     m_tokenExpire = 0;  // in seconds
     QTimer* m_tokenTimeOutTimer;
     QString m_apiURL = "https://api.spotify.com";
 };

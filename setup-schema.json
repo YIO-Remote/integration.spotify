@@ -8,6 +8,7 @@
     "additionalProperties": true,
     "required": [
         "access_token",
+	"refresh_token",
         "client_id",
         "client_secret",
         "entity_id"
@@ -18,10 +19,14 @@
             "type": "string",
             "title": "Access token",
             "description": "Not user input. Access token generated after authenticating to Spotify.",
-            "default": "",
-            "examples": [
-                "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiVlx1MDAxNcKbwoNUwoonbFPCu8KhwrYiLCJpYXQiOjE0NDQyNjI1NDMsImV4cCI6MTQ0NDI2MjU2M30.MldruS1PvZaRZIJR4legQaauQ3_DYKxxP2rFnD37Ip4"
-            ]
+            "default": ""
+        },
+	"refresh_token": {
+            "$id": "#/properties/refresh_token",
+            "type": "string",
+            "title": "Refresh token",
+            "description": "Not user input. Refresh token generated after authenticating to Spotify.",
+            "default": ""
         },
         "client_id": {
             "$id": "#/properties/client_id",
