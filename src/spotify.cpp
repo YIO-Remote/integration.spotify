@@ -241,7 +241,7 @@ void Spotify::search(QString query, QString type, QString limit, QString offset)
             if (map.contains("tracks")) {
                 QVariantList map_tracks = map.value("tracks").toMap().value("items").toList();
 
-                QStringList commands = {"PLAY", "SONGRADIO"};
+                QStringList commands = {"PLAY", "SONGRADIO", "QUEUE"};
 
                 for (int i = 0; i < map_tracks.length(); i++) {
                     QString id       = map_tracks[i].toMap().value("id").toString();
@@ -311,7 +311,7 @@ void Spotify::search(QString query, QString type, QString limit, QString offset)
             if (map.contains("playlists")) {
                 QVariantList map_playlists = map.value("playlists").toMap().value("items").toList();
 
-                QStringList commands = {"PLAY", "PLAYLISTRADIO"};
+                QStringList commands = {"PLAY", "PLAYLISTRADIO", "QUEUE"};
 
                 for (int i = 0; i < map_playlists.length(); i++) {
                     QString id       = map_playlists[i].toMap().value("id").toString();
@@ -387,7 +387,7 @@ void Spotify::getAlbum(QString id) {
                 }
             }
 
-            QStringList commands = {"PLAY", "SONGRADIO"};
+            QStringList commands = {"PLAY", "SONGRADIO", "QUEUE"};
 
             BrowseModel* album = new BrowseModel(nullptr, id, title, subtitle, type, image, commands);
 
@@ -436,7 +436,7 @@ void Spotify::getPlaylist(QString id) {
                 }
             }
 
-            QStringList commands = {"PLAY", "SONGRADIO"};
+            QStringList commands = {"PLAY", "SONGRADIO", "QUEUE"};
 
             BrowseModel* album = new BrowseModel(nullptr, id, title, subtitle, type, image, commands);
 
@@ -682,6 +682,23 @@ void Spotify::sendCommand(const QString& type, const QString& entityId, int comm
                                      });
                     getRequest(url, param.toMap().value("id").toString());
                 }
+            }
+        }
+    } else if (command == MediaPlayerDef::C_QUEUE) {
+        if (param.toMap().contains("type")) {
+            if (param.toMap().value("type").toString() == "track") {
+                QString  url     = "/v1/tracks/";
+                QObject* context = new QObject(this);
+                QObject::connect(this, &Spotify::requestReady, context,
+                                 [=](const QVariantMap& map, const QString& rUrl) {
+                                     if (rUrl == url) {
+                                         qCDebug(m_logCategory) << "QUEUE MEDIA" << map.value("uri").toString();
+                                         QString message = "?uri=" + map.value("uri").toString();
+                                         postRequest("/v1/me/player/queue", message);
+                                     }
+                                     context->deleteLater();
+                                 });
+                getRequest(url, param.toMap().value("id").toString());
             }
         }
     } else if (command == MediaPlayerDef::C_PAUSE) {
