@@ -71,6 +71,10 @@ unix {
             error("Invalid integrations.library version: \"$$INTG_GIT_VERSION\". Please check out required version \"$$INTG_LIB_VERSION\"")
         }
     }
+} else {
+    # sorry, no priority...
+    INTG_LIB_VERSION = "?"
+    INTG_GIT_VERSION = "?"
 }
 
 QMAKE_SUBSTITUTES += spotify.json.in version.txt.in
