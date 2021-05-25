@@ -36,7 +36,7 @@
 //// SPOTIFY FACTORY
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const bool USE_WORKER_THREAD = false;
+const bool USE_WORKER_THREAD = true;
 
 class SpotifyPlugin : public Plugin {
     Q_OBJECT
@@ -126,4 +126,7 @@ class Spotify : public Integration {
     int     m_tokenExpire = 0;  // in seconds
     QTimer* m_tokenTimeOutTimer;
     QString m_apiURL = "https://api.spotify.com";
+
+    //Needs to be created in main thread, not in worker thread
+    BrowseModel m_album;
 };
